@@ -11,6 +11,7 @@ then run the compiler
 npx tsc <file name>
 the compilation step will alert us to type errors and the types will be removed so just the JS runs in the browser
 It will create a <file name>.js file based on the TS file
+To compile all the files at one we run npx tsc --init
 
 we can adjust settings in the tsconfig.json file
 
