@@ -168,3 +168,57 @@ We have to use a special directive, ngModel.
 This setup will: trigger on the input event and update the value of serverName; it will also update the value of the input element.
 
 # Directives
+Directives are instructions in the DOM.
+Components are a kind of directive.
+Once we place the selector of our component in our templates we're instructing Angular to add the content of our componet template and the business logic in our TS code in this place where we use the selector.
+There are also directives without a template.
+Example: <p appTurnGreen>Receives a green background.</p>
+We typically add directives with an attibutes selector, but technically the selector of a directive can be configured just like the selector of a component.
+Angular would find the instruction where we've defined it with the director decorator:
+@Directive({
+    selector: '[appTurnGreen]'
+})
+export class TurnGreenDirective{...}
+
+There are a couple of built-in directives in Angular. We can also write our own.
+
+# ngIf
+For showing data conditionally
+The star before ngIf is required to indicate it's a structurally directive. It changes the structure of the DOM.
+<p *ngIf="">Server created.</p>
+Inside the quotes it has to be an expression that resolves to true or false.
+We can create a new property, named serverCreated, and set it to false to start. Then set it to true once the server is created. So we add it to the onCreateServer method.
+
+# adding else condition to ngIf
+We can place a local reference onto the element with #
+Think of it as a marker.
+We change the p element to <ng-template></ng-template>
+This is a component, a directive shipping with Angular.
+Then we add the p element back into the template. We mark a certain spot in the template we want to show conditionally. 
+We can enhance the ngIf by adding else and noServer.
+<p *ngIf="serverCreated; else noServer">Server created.</p>
+
+# ngStyle
+An attribute directive doesn't add or remove elements, but changes the element it's placed on. 
+We'll use property binding on the directive: [ngStyle]; the square brackets indicate that we want to bind to some property on this directive, and the property name is ngStyle.
+The ngStyle directive expects to get a JS object and here we define key/value pairs of the style name as the key and the value of the style as the value. 
+We can pass it a method to get the color based on a condition. 
+<p [ngStyle]="{backgroundColor: getColor()}">
+Between the quotation marks we are executing TS code. 
+
+# ngClass
+Allows us to dynically add or remove CSS classes. 
+Needs to be combined with property binding, so we wrap it in square brackets.
+[ngClass]="{}"
+and we pass a JS object. The keys are the CSS class names, and the values are the conditions determining whether the class should be attached or not.
+In our example, if the status is online, it should attach this CSS class to the element, otherwise it should not get attached. 
+
+# ngFor
+We can add our server component dynamically.
+In the servers.component.ts we'll add a new property, servers = []
+And when we create a new server, we want to push the new server to the array of servers. 
+Then we can replicate the app.server component as often as needed for all the servers in the array.
+On the selector in the severs.component.html we place a structural directive:
+<app-server *ngFor="let server of servers"></app-server>
+We define a temporary variable for inside the loop (whatever name we like), and then of servers (the property defined in the TS file.)
+This will loop through all the elements in the array and assign the element to this dynamic server variable. Just like in regular JS code.
