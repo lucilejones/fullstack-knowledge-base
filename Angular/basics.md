@@ -78,6 +78,10 @@ server.component.spec.ts - for testing
 (delete the testing one for now - will go over in a later unit)
 It should also auto update the app.module.ts file, but we can double-check that it's added as an import and in the declarations array. 
 
+To create a new component without the spec.ts file:
+ng generate component --skip-tests=true component-name
+ng g c --skip-tests=true component-name
+
 # Component templates
 In the component.ts file we can have either a templateUrl or a template - one points to an external html file, the other if defined inline, in the TS file. But we have to have a template. (Don't always have to have a selector or the styles.)
 If we want to write multi-line strings we need to use backticks instead of single quotes.

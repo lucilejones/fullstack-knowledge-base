@@ -21,6 +21,7 @@ npm install -g @angular/cli
 # to create a new Angular project
 ng new project-folder-name
 (can add --no-strict on the end to disable the TypeScript)
+ng new project-folder-name --no-strict
 
 Then cd into the project folder
 
