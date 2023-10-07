@@ -149,4 +149,31 @@ Called whenever our view has been checked, once we're sure all changes were disp
 - ngOnDestroy - called once the component is about to be destroyed
 Called right before the object will be destroyed by Angular.
 
+# Lifecycle hooks in action
+Callig the hook inside the class is enough, but it's a good idea to use the implements ... in order to be explicit about which interfaces the component uses and which methods our component will have. 
+(We do have to import all the interfaces.)
 
+ngOnChanges is the only hook that receives an argument, which is of type SimpleChanges and also needs to be imported from '@angular/core.
+ngOnChanges(changes: SimpleChanges){} 
+constructor gets called, and ngOnChanges gets called, before ngOnInit
+The SimpleChanges is an object which has an element which is of type SimpleChange; element is our bound property from the @Input.
+Angular gives us some info: the currentValue, is this the first change? yes, and the previousValue (which in the first case is undefined)
+
+# Lifestyle hooks and template access
+If we want to get access to the heading in the server-element component, for example, we can place a local reference named #heading on it, and place a new @ViewChild property in the class, with the selector 'heading'. It has the type ElementRef which also needs to be imported from '@angular/core'.
+We won't be able to access it in the ngOnInit console.log, but we will be able to access it in the ngAfterViewInit console.log.
+AfterViewInit gives us access to the template elements, but before that hook has been reached we can't access them. We can't check the value of some element in the DOM because it hasn't been rendered yet.
+
+# getting access to ng-content with @ContentChild
+in Angular 8+ - 
+instead of: @ContentChild('contentParagraph') paragraph: ElementRef;
+we need to do: @ContentChild('contentParagraph', {static: true}) paragraph: ElementRef;
+If we access the selected element anywhere else in teh component that isn't ngOnInit, we need to set static: false instead.
+For Angular 9 or higher we can omit static: false, but do need to specify static: true when using the selected element inside of ngOnInit().
+
+In the app component where we project content into the server element, maybe we also want to place a local reference on the paragraph element. #contentParagraph
+If we want to use that in our server element component, which is where this content will end up, we can't use @ViewChild because it's not part of the view, it's part of the content. 
+So instead we use @ContentChild (which also needs to be imported from '@angular/core').
+We pass it a selector 'contentParagraph'. And then we store it in a property, paragraph, which will be of type ElementRef.
+We won't be able to reach the value or anything before we reach ContentInit.
+We can use @ContentChild to get access to content which is stored in another component but passed on via ng-content.
