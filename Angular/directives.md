@@ -93,3 +93,104 @@ Then in the app component we add the directive.
 It's available through the selector because we also added it to the app module. 
 
 The rendered is a better directive because Angular is not limited to running in the browser. It also works in these environments where we might not have access to the DOM. So if we try to change the DOM by directly accessing the native element and the style of that element (like we did with the basic directive), we might get an error. Most of the time, it might be okay, but it's a better method to use the rendered for DOM access and to use the methods it provides. 
+
+# Using HostListener to Listen to Host Events
+We can react to some events occuring on the element the directive sits on. 
+Inside of the BetterHighlightDirective we add a new decorator, the @HostListener, which needs to be imported from '@angular/core', and add it to some method we want to execute:
+@HostListener() mouseover() {}
+Then that can be triggered whenever some event occurs, which can be specified in the parentheses, as an argument, as a string. 
+@HostListener('mouseenter') mouseover() {}
+mouseenter is one of the events supported by the DOM element this directive sits on. 
+In the mouseover() we received the eventData of type Event.
+We can also listen to custom events here. Just like a method we exectue when we add a click listener, or whatever the event is and then pass the method between quotation marks.
+We want to change the background color of the element. So we'll set the style on mouseenter.
+Then we can add another @HostListener for mouseleave.
+
+# Using HostBinding to bind to Host properties
+We have another decorator that we can use in place of the renderer: @HostBinding, which also needs to be imported from '@angular/core'
+We need to bind this to a property who's value will become important. In this example, we'll use backgroundColor, a new property we create here, of type string.
+@HostBinding() backgroundColor: string;
+We can pass a string defining to which property of the hosting element we want to bind.
+Properties of the hosting element, that is what we also access in the BasicHighlightDirective. Style, backgroundColor would be such a property.
+
+@HostBinding('style.backgroundColor') backgroundColor: string;
+We're accessing the DOM property, so the camelCase is important. 
+
+With this, we're telling Angular, on the element where this directive sits please access the style property and then the subproperty backgroundColor and we set that equal to whatever backgroundColor is set here. We can add that to the mouseenter HostListener. 
+this.backgroundColor = 'blue';
+[we always need to make sure we're accessing a property the element has; for example, only inputs have a value property]
+We'll also want to set an initial color so we don't get an error before we mouseover the first time. 
+@HostBinding('style.backgroundColor') backgroundColor: string = 'transparent';
+
+We can bind to any property of the element we're sitting on.
+
+# Binding to directive properties
+We can use custom property binding. 
+
+In the better-highlight directive we can add an @Input called default color (and we need to import Input from '@angular/core'), and one for the highlight color.
+@Input() defaultColor: string = 'transparent';
+@Input() highlightColor: string = 'blue';
+We have some default values to use, but they can be overwritten from outside. 
+Then we change the @HostBinding backgroundColor to the this.defaultColor (instead of hard-coding blue in here.)
+Then in the mouseover we change it to this.highlightColor.
+And then defaultColor again once we mouseleave.
+
+To bind it from outside:
+In our app component where we use the better-directive, we can bind to defaultColor, and maybe set it to yellow. And also bind to highlightColor, which could be red.
+We actually need to set the this.backgroundColor = this.defaultColor in the ngOnInit so it starts out that way when the page is first loaded. 
+
+# What happens behind the scenes on structural directives
+The star indicates to Angular that it is a structural directive. 
+Behind the scenes Angular will transform them into something else, it will transform an ngIf usage (for example) into something where we end up with the tools of property binding and so on. 
+We could rewrite the same code with an ng-template instead.
+Inside the ng-template we have the content we conditionally want to render. 
+ng-template is an element that is not rendered itself, but allows us to define a template for Angular to use once it determines that this element needs to be rendered because the condition is true.
+We add the ngIf to the ng-template, without the star, because this is the form it will get transformed to when we use the star, but instead with square brackets for property binding. <ng-template [ngIf]="!onlyOdd">...</ng-template>
+
+<div *ngIf="!onlyOdd">
+    <li>...</li>
+</div>
+
+gets transformed to
+
+
+<ng-template [ngIf]="!onlyOdd">
+    <div>
+        <li>...</li>
+    </div>
+</ng-template>
+
+# Building a structural directive
+We'll create a directive called unless; and this directive will attach something only if the condition is false. 
+In the directive file we need to get the condition as an input. 
+@Input() and import from '@angular/core'
+We want to bind to a property unless, and execute a method whenever the condition changes. 
+To do that we implement a setter with the set keyword. That will turn unless into a method, though technically it's still a property, it's just a setter of the property which is a method that gets executed whenever the property changes. In this case, whenever the condition that we pass changes, or some parameter of this condition.
+So unless needs to receive the value as an input, in this case of type boolean.
+@Input() set unless(condition: boolean) {}
+Then we check if the condition is not true (and if that is the case display something).
+
+Our unless directive will sit on an ng-template because that is what it is transformed to by Angular, if we use the star.
+So we need to get access to the template and the place in the DOM where we want to render it. Both can be injected.
+In the constructor, we inject the template with private templateRef with the type TemplateRef.
+Just like ElementRef gives us access to the element the directive was on, template ref does the same for a template. It is a generic type, so we can pass any.
+We also need to import TemplateRef from '@angular/core'
+The second piece of information we need is the view container, where we should render it.
+We can name it vcRef for view container reference, which will be of type ViewContainerRef (also imported from '@angular/core').
+constructor(private templateRef: TemplateRef<any>, private vcRef: ViewContainerRef) { }
+
+We can use the vcRef whenever the condition changes to call the createEmbeddedView() method, which creates a view in this view container. And the view is our template ref. 
+if (!condition) {
+    this.vcRef.createEmbeddedView(this.templateRef);
+} 
+This template we created there is exactly this reference to the template there.
+In the else we call the clear method to remove everything from this place in the DOM.
+
+We need to make sure the directive is added to teh app.module.ts in the declarations array. 
+Then in the app component we can use our directive. We still have to use the star because it still is a structural directive.
+
+<div *appUnless="onlyOdd">
+    <li>...</li>
+</div>
+
+We'll get an error that we can bind to appUnless because it isn't a known property of <div>. We have to make sure the property name shares the name of the directive, appUnless.
