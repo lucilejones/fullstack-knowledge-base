@@ -194,3 +194,27 @@ Then in the app component we can use our directive. We still have to use the sta
 </div>
 
 We'll get an error that we can bind to appUnless because it isn't a known property of <div>. We have to make sure the property name shares the name of the directive, appUnless.
+
+# understanding ngSwitch
+ngSwitch is a built-in structural directive
+Maybe we have a value property in our app component.
+Then we have a place in our app where the value changes and we get a couple different messages we want to display for each of these values.
+Then we bind to ngSwitch with property binding: <div [ngSwitch]="value"></div>
+We bind to value - this is our condition, what we want to check.
+Then Switch has a couple of cases we can now cover.
+<div [ngSwitch]="value">
+    <p>Value is 5</p>
+    <p>Value is 10</p>
+    <p>Value is default</p>
+</div>
+Then we need to add something to determine which paragraph gets shown. We only want to display one of these at at time. 
+We use *ngSwitchCase and pass the value as an argument.
+For the default we use ngSwitchDefault.
+<div [ngSwitch]="value">
+    <p *ngSwitchCase="5">Value is 5</p>
+    <p *ngSwitchCase="10">Value is 10</p>
+    <p *ngSwitchDefault>Value is Default</p>
+</div>
+
+We need to use the star for Angular to transform this behind the scenes. 
+Can be useful if we're creating lots of ngIf conditions. 
