@@ -75,4 +75,58 @@ We might have cases where we want to have many different instances of the same s
 In this case we want to have the same instance. 
 The way we wrote it (above) we have three instances. The instance in app component gets provided to both the account and new account components, so we don't need to provide it again and override the first instance (the one we would get from the app component).
 
-We can fix it by removing the service from the providers array in the account component and the new-account component. We don't remove it from the constructor, because that tells Angular that we want the instance of the service here.
+We can fix it by removing the service from the providers array in the account component and the new-account component. We don't remove it from the constructor, because that tells Angular that we want the instance of the service here. (We also need to leave the import.) The providers array essentially tells it which instance we want.
+
+# Injecting services into services
+Since the highest level of the hierarchial structure is not the app component, we can also take the AccountsService out of the providers array there. 
+(Leave it in the constructor and the imports.)
+The highest possible level is in the app module. This file has a providers array and we can add the AccountsService here (and make sure to import from the service file).
+
+With that change we're making sure tha everything in our application receives the same instance of the service (unless we override it like we did before).
+And then we can inject a service into another service. In order to do that it has to be provided in the app module and not on the component level.
+
+We can also provide the LoggingService in the app module, then comment it out in the other files. Then we can use the logging service in the accounts service.
+In the accounts.service.ts file, to use the service there, we add a constructor and inject our logging service. (Make sure to import the LoggingService).
+
+We can't just use this.loggingService.logStatusChange(status) in the addAccount and updatedStatus functions. When we inject a service into something it needs to have some meta data attached to it. A component has meta data because we have @Component. A directive has meta data because we have @Directive. But a service doesn't have any meta data (automatically). We need to attach the meta data: @Injectable()
+(This also needs to be imported from '@angular/core')
+This tells Angular that now this service is injectable, something can be injected into it. We add @Injectable() to the service where we want to inject something.
+
+We don't need to add @Injectable() to the logging service class because it's a service that we only inject somewhere else. However, in newer versions of Angular it's recommended that we always add @Injectable(). (Maybe this will affect how Angular works in the future - but we don't technically need to add it.)
+
+# Using services for cross-component communication
+Without services, if we wanted to have a click on the button in the account component and for some reason we wanted to output something in the new-account component, we'd have to emit an event in the account component, then we'd have to catch the event in the app component, and then we'd have to pass the new data down via property binding to the new-account component where we wanted to handle it. 
+
+In our account service we can provide an event that we can trigger in one component and listen to in another. 
+In the accounts service we can add statusUpdated as a new EventEmitter (which we have to import from '@angular/core') which will pass on the new status.
+statusUpdated = new EventEmitter<string>();
+
+Then we can call it in the account component to emit the new status:
+in the onSetTo method:
+this.accountsSevice.statusUpdated.emit(status);
+Now we're emitting an event we set up in the service. 
+(Later, we'll learn about observables.)
+
+Then in new-account.component.ts we'll listen for the emit (subscribe to it, because event emitter just kind of wraps an observable). We receive the new staus which will be a string, and then we throw an alert saying what the new status is.
+in the constructor:
+this.accountsService.statusUpdated.subscribe((status: string) => alert('New Status: ' + status));
+
+# Services in Angular 6+
+Instead of adding a service class to the providers[] array in AppModule, we can set the following config in @Injectable():
+
+@Injectable({providedIn: 'root'})
+export class MyService {...}
+
+This will work the same as the following:
+In the service file:
+export class MyService {...}
+and in the app module file:
+import { MyService } from './path/to/my.service';
+@NgModule({
+    ...
+    providers: [MyService]
+})
+export class AppModule {...}
+
+The new syntax is completely optional, but one advantage is that services can be loaded lazily (behind the scenes) and redundant code can be removed automatically. This can lead to better performance and loading speed for bigger services and apps.
+
