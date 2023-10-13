@@ -139,3 +139,62 @@ It's fine to use the snapshot for the first initialization, but we need a differ
 In the ngOnInit, after we assign the initial setup, we can use our route object, and instead of using snapshot, we can use the params property that is on the object itself. 
 params is an observable - observables are a feature added by some other third party package, not Angular - but are heavily used by Angular and allow you to easily work with asynchronous tasks, and this is an asychronous task. Because the parameters of the currently loaded route might change at some point in the future but we don't know when or if or how long it will take. So we can't block our code and wait for this to happen because it might never happen. An observable is an easy way to subscribe to some event which might happen in the future, to then execute some code when it happens, without having to wait for it. 
 (We'll learn more about observables later.)
+We can call the subscribe method on params (in the ngOnInit):
+this.route.params
+  .subscribe()
+.subscribe() can take three functions here as arguments
+The first one is the most important, it will be fired whenever the parameters change.
+It will take an argument of params, of type Params (which needs to be imported).
+Params will always be an object which holds the parameters we defined in the route as properties.
+In the function body we can update our user object.
+this.route.params
+  .subscribe(
+    (params: Params) => {
+        this.user.id = params['id'];
+        this.user.name = params['name'];
+    }
+  );
+So now this will update our user whenever the parameters change.
+The subscription will be set up with ngOnInit runs, that code will run. But the code to update the user will only run when the parameters change (because it's in the callback function passed to the subscribe method.)
+This is the approach to take in order to be safe against changes not being reflected in the template. However, if we know that the component we're on may never be reloaded from within the component (if we know 100% of the time it'll be recreated when it is reached), then we can just use the snapshot and we don't need to subscribe.
+
+# Note about route observables
+Angular does something for us in the background. It cleans up the subscription we set up in this component whenever the component is destroyed. 
+We could implement OnDestroy, call that after the ngOnInit, save the subscription in a variable called, for example, paramsSubscription of type Subscription (which would need to be imported from 'rxjs/Subscription'). Subscription is not shipping with Angular, but Angular is using that package.
+Then we bind the paramsSubscription property to the subscrtiption we set up.
+Then in the ngOnDestroy() we unsubscribe:
+this.paramsSubscription.unsubscribe();
+We don't have to do this because Angular will do this for us for the route observables, but if we add our own observables we will need to unsubscribe. 
+
+# Passing query parameters and fragments
+Query parameters are those separated by a question mark, like ?mode=editing
+We might also have a hash fragment (#) to jump to a specific place in our app.
+
+In our app module, we add another route that allows us to edit a certain server.
+{ path: 'servers/:id/edit', component: EditServerComponent }
+On the servers component we need to hook up the links in the list.
+On the anchor tag we add:
+[routerLink]="['/servers', 5, 'edit']"
+(We can make this more dynamic later)
+If we want to have a query parameter deciding if we're able to edit the server or not, we add a new property of the routerLink directive. We can bind to the query params property.
+[queryParams]=""
+Query params is not a new directive; it's another bindable property of the link directive.
+We pass a JS object.
+We can definte key/value pairs of the of the parameters we want to edit.
+[queryParams]="{allowEdit: '1'}"
+We can have more than one key/value pair which would then be separated with the & symbol in our endpoint url
+We also have the fragment property. We can only have one fragment. 
+Here we pass a string in quotation marks (inside the quotation marks) or omit the square brackets around fragment.
+[fragment]="'loading'" OR
+fragment="loading"
+That will add #loading to the endpoint
+
+We can do this programmatically.
+In the home component where we have the Load Servers button, if we want to load server 1, then we pass 1 to the onLoadServer() function.
+In the TS file we need to adjust the function to take a parameter:
+onLoadServer(id: number) {}
+It will take the if passed as a number.
+Then we'll update the navigate to include the id, and then as a last argument, 'edit'
+this.router.navigate(['/servers', id, 'edit']);
+And we still want to add query params in the navigate method, so we add an object
+this.router.navigate(['/servers', id, 'edit', {queryParams: {allowEdit: '1}, fragment: 'loading}]);
