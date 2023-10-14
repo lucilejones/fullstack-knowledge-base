@@ -198,3 +198,55 @@ Then we'll update the navigate to include the id, and then as a last argument, '
 this.router.navigate(['/servers', id, 'edit']);
 And we still want to add query params in the navigate method, so we add an object
 this.router.navigate(['/servers', id, 'edit', {queryParams: {allowEdit: '1}, fragment: 'loading}]);
+
+# retreiving query parameters and fragments
+In the edit-server component, to get access to our query parameter and fragment.
+We'll inject the ActivatedRoute in the constructor and need to do the import (from '@angular/router').
+private route: ActivatedRoute
+with this added, in the ngOnInit we can retreive our query parameters and the fragment.
+There are two ways of retreving it. 
+The first way is to access the snapshot.
+console.log(this.route.snapshot.queryParams);
+console.log(this.route.snapshot.fragment);
+
+Similar to our other situation, this is only run at the time the component is created. So if there is a change to the params from the page we're currently on, we won't be able to react to any changes that happend after the component is loaded.
+
+The alternative is to subscribe to queryParams and fragments as an observables:
+this.route.queryParams.subscribe();
+this.route.fragment.subscribe();
+
+Angular will handle the unsubscribe when the component is destroyed.
+
+# Common Gotchas
+-Loading a single server without an id available - get an error. (We'll learn more about this later - nesting another router in there to have child routing, to load the route dynamically next to our menu.)
+
+-If we parse a parameter from our URl it will always be a string, because out whole UTl is just text. 
+We have to convert our id from the params to a number, because our server id is of the type number.
+const id = +this.route.snapshot.params['id'];
+We also need to do it in the observable.
+.subscribe(
+  (params: Params) => {
+    this.server = this.serversService.getServer(+params['id']);
+  }
+)
+
+# setting up child (nested) routes
+in the app.module.ts file, in our routes, we add another property to the servers route: children
+children takes another array of routes, so then we can take the other servers routes and add them inside the array as children. And we remove /servers at the beginning of those routes because it is always prepended.
+{ path: 'servers', component: ServersComponent, children: [
+  { path: ':id', component: ServerComponent },
+  { path: ':id/edit', component: EditServerComponent }
+] }
+
+If this is all we do, we'll get an error that Angular cannot find an outlet to load our server component. 
+The <router-outlet></router-outlet> is only reserved for routes on the top level.
+The child routes of servers need a separate outlet. 
+In the server component HTML file we can add a router-outlet (and comment out the code where we were originally loading the app-edit-server and the app-server)
+This adds a new hook which will be used on child routes of the route being loaded on the servers component.
+
+We can also do this with the user component and its child route.
+It ends up being important that we dynamically update the id, etc because the component wasn't reloaded or exchanged, but we were able to switch the loaded user while the user component was already loaded. 
+
+# congiguring the handling of query parameters
+(for example, preserving them if we navigate again)
+In the server component we can add another property that we use to configure our navigation. We use the queryParamsHandling property. It takes a string as a value, for example, 'merge' or 'preserve'. This will override the default behavior and make sure the new ones are kept. 
