@@ -250,3 +250,56 @@ It ends up being important that we dynamically update the id, etc because the co
 # congiguring the handling of query parameters
 (for example, preserving them if we navigate again)
 In the server component we can add another property that we use to configure our navigation. We use the queryParamsHandling property. It takes a string as a value, for example, 'merge' or 'preserve'. This will override the default behavior and make sure the new ones are kept. 
+
+# redirecting and wildcard routes
+-404 error handling
+-redirecting
+
+We can generate a page-not-found component to be rendered whenever the user navigates to a path we don't have. 
+{ path: 'something', component: PageNotFoundComponent }
+We can also use redirectTo instead of component, to specify a path
+{ path: 'something', redirectTo: '/not-found' }
+We can't define all possible wrong urls, we can use the **. This is the wildcard route and tells Angular to catch all paths you don't know.
+{ path: '**', redirectTo: '/not-found' }
+
+We need to make sure that generic, wildcard route is the last in our list of routes. The routes get parsed from top to bottom. If it were at the top of the list we would always get not-found.
+
+# redirection path matching
+By default Angular matches paths by prefix. It will check if the path you entered in the url does start with the path specified in the route. And every path starts wtih '' (nothing - there isn't any white space there, it's just nothing). 
+If we try to use
+{ path: '', redirectTo: '/somewhere-else' }
+this will not always redirect us. 
+To fix this behavior, we can change the matching strategy to "full"
+{ path: '', redirectTo: '/somewhere-else', pathMatch: 'full' }
+Then we will only get redirected if the full path is '' (so only is we have no other content in the path).
+
+# Oursourcing the route configuration
+Typically, if we have more than two or three routes, we add them to their own app-routing-module.ts file instead of putting them directly into the app.module.ts file.
+(We'll have a whole lesson later about modules.)
+
+This file will receive the @NgModule decorator.
+import { NgModule } from '@angular/core';
+
+@NgModule({
+    
+})
+
+export class AppRoutingModule {
+
+}
+
+We cut out the const appRoutes: Routes = [] (the whole thing) and add it to the app-routing.module.ts file under the imports and about @NgModule({}).
+Then we need to import all the components. We also need to import Routes from the '@angular/router'
+
+we don't need to add declarations in the @NgModule in this file, because the compoenents are already declared in the app.module.ts file. 
+
+We do need to remove the RouterModule from the imports array in @NgModule (and from the imports at the top of the file) in the root app.module.ts file and put that in our app-routing.module.ts file.
+
+Then we need to add our app-routing module back to our main module. For this, we need to add the exports array to the @NgModule (in the app-routing.module.ts file.)
+Exports tells Angular what should be accessbile from this module to the module that imports this module. What we want to make accessbile here is our RouterModule.
+exports: [RouterModule]
+Here, we don't call .forRoot(), because we've already configured it and now we simple export the configured module.
+The in app.module.ts, we can import our own routing module.
+In the imports array (in @NgModule):
+AppRoutingModule
+(and make sure to add the import at the top of the file with the file path)
