@@ -303,3 +303,117 @@ The in app.module.ts, we can import our own routing module.
 In the imports array (in @NgModule):
 AppRoutingModule
 (and make sure to add the import at the top of the file with the file path)
+
+# Guards
+-Example use case: we only want certain routes to be available if a user if logged in. We'd want to check that before any of the subroutes are accessed.
+-manually checking would be problematic and time-consuming.
+
+# Protecting routes with canActivate
+We can run some code at a point of time defined by us.
+We add a new folder in our root folder named auth-guard.service.ts
+
+We'll use it as a normal service, so we can export a class named AuthGuard and implement the CanActivate interface. It's provided by the Angular router package and it forces us to have a canActivate method. This will receive two arguments, the ActivatedRouteSnapshot, and the state of the router. 
+import {CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot} from '@angular/router';
+
+export class AuthGuard implements CanActivate {
+  canActivate(route: ActivatedRouteSnapshot,
+              state: RouterStateSnapshot)
+}
+
+[my VS code says CanActivate is deprecated]
+
+We'll define that Angular should execute this code before a route is loaded, so it will give us this data, and we simply need to be able to handle it.
+
+canActivate returns either an Observable, which will wrap a boolean and resolve to a true or false value; or it will return a promise, also returning a boolean, or it returns just a boolean.
+export class AuthGuard {
+    canActivate(route: ActivatedRouteSnapshot,
+        state: RouterStateSnapshot): Observable<boolean> | Promise<boolean> | boolean  {
+        
+    }
+}
+
+canActivate can run either asynchronously or synchronously. 
+
+For this example we'll make a fake service AuthService (just to show this use case).
+In a real application, this might reach out to a server and allow login, logout, and check our current authentication state.
+
+In the auth-guard service we'll add @Injectable to reach out to the other service auth.service to get the functionality from that service into this service. (And import Injectable from '@angular/core')
+And in the constructor we'll inject the authService of type AuthService and import from the file path.
+And then in the canActivate we'll check whether the user is logged in or not.
+We'll reach out to the auth servie for the isAuthenticated method. Then we want to handle it whenever the promise is the auth service resolves. There we'll get back a boolean.
+Then we want to check. If authenticated is true, we want to return true; otherwise we want to navigate away because we don't want to allow the user access to that route.
+In order to do this, we'll need to inject the Angular router. 
+Then we can navigate with the .navigate() method back to our root. 
+
+And we have to return this whole thing (inside the canActivate function):
+    canActivate(route: ActivatedRouteSnapshot,
+        state: RouterStateSnapshot): Observable<boolean> | Promise<boolean> | boolean  {
+        return this.authService.isAuthenticated()
+            .then(
+                (authenticated: boolean) => {
+                    if (authenticated) {
+                        return true;
+                    } else {
+                        this.router.navigate(['/']);
+                        // we can also return false, though we will prevent the original navigation anyway
+                    }
+                }
+            );
+    }
+
+In order to use this guard, we go to the app routing module to define which routes should be protected by this guard.
+The routes we want to be protected, we add the canActivate property to it. It takes an array of all the guards we want to apply to this route. It will automatically get applied to all the child routes. 
+In this example, in the array we'll add AuthGuard (and make sure to add it to the import list at the top).
+
+So this makes the servers route (and all its child routes) accessible only if the auth guard canActivate method returns true, which will only happen if in the auth service, loggedIn is set to true. 
+
+Before this will work we need to add the two new services to the app.module providers array. 
+Then when we try clicking on servers in our app, it will always navigate back to home after the 8 seconds.
+
+# protecting child (nested) routes with canActivateChild
+We could grab it from the root servers route and instead put it on each child, but that is not the easiest way. 
+We'll import CanActivateChild from '@angular/router'
+[my VS code said this is also deprecated]
+
+We'll provide a canActivateChild method in the class. Then we'll add the same logic as the other method.
+We can then use a different hook in our routes.
+Instead of adding canActivate to the main servers route, we'll add canActivateChild, with the array of services. We still add the AuthGuard.
+
+Then we can click on servers and see the list, but if we try to click on a single server we get redirected back. 
+
+# using a fake auth service
+Adding the functionality to let a user log in.
+In our home component, we'll add two new buttons: Login and Logout.
+We'll inject the authService into the constuctor of the home component, and add the two methods.
+For this example here we won't see any visual indication that we're logged in, but we will be able to click on a single server.
+
+# controlling navigation with canDeactivate
+control whether we're allowed to leave a route.
+Maybe a user accidentally clicked the back button or forgot to click the "update server" button, we can ask if they really want to leave. 
+Keeping the user from accidentally navigating away.
+
+In the edit-server component we'll add a new property. Under allowEdit, we'll add a changesSaved property which is set to false to start.
+Then we'll want to change that whenever we click on the update server button.
+In the onUpdateServer() method, we can add
+this.changesSaved = true;
+
+After the changes are saved we want to navigate away. So we need to inject the router in the constructor. 
+Then we can add this.router.navigate(['../'], {relativeTo: this.route})
+going up one level to the last loaded server. 
+
+Then we want a way to check with the user if they want to leave the route without saving the changes. 
+We need to exectute this code in this component because we'll need access to the changesSaved method which informs us on whether the update button was clicked. 
+However, a guard always needs to be a service. 
+In the edit-server file we'll add a new file called can-deactivate-guard.service.ts
+
+In that file we want to export an interface - a contract which can be imported by some other class which forces this class to provide some logic. 
+We'll name it CanComponentDeactivate and it will require one thing from the component which implements it. This component should have a canDeactivate method.
+Then we define the type of this method, since it's only an interface and won't contain the actual logic, it will only contain information for what it should look like.
+This method will take no arguments, but should return an Observable which will resolve to a boolean or a Promise which will resolve to a boolean or a boolean. (Same pattern as the canActivate method.)
+export interface CanComponentDeactivate {
+    canDeactivate: () => Observable<boolean> | Promise<boolean> | boolean;
+}
+
+Then we need to define the class and export it. 
+We want to implement CanDeactivate and wrap our our interface.
+[Code says CanDeactivate is deprecated.]
