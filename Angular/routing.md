@@ -415,5 +415,142 @@ export interface CanComponentDeactivate {
 }
 
 Then we need to define the class and export it. 
-We want to implement CanDeactivate and wrap our our interface.
+We want to implement CanDeactivate and wrap our our interface, which forces a component or class to implement the canDeactivate method. This setup makes sure we can easily connect a component to our guard. 
+
+export class CanDeactivateGuard implements CanDeactivate<CanComponentDeactivate> {}
 [Code says CanDeactivate is deprecated.]
+
+the canDeactivate method will be called by Angular once we try to leave a route.
+This will have the component that we're currently on, which needs to be of type CanComponentDeactivate, a component which has this interface implemented, which has the canDeactivate method.
+We also receive the current route as an argument, and that is an ActivatedRouteSnapshot. (We'll need to import that at the top.)
+It will have the current state, and that is a RouterStateSnapshot. (Also import at the top from '@angular/router').
+And the nestState - where we want to go. Because this will be called at the end when we want to leave a route.
+nextState is an optional argument (so we include the ?) and it will also be a RouteStateSnapshot.
+This will return an observable, a promise, or a boolean (just like the guard).
+
+Then we call canDeactivate on the component we return -- the component we're currently on.
+
+The Angular router can execute canDeactivate in our service and rely on the fact that the component we're currently on has the canDeactivate method, because this is where we will implement the logic checking whether we can leave a route. 
+
+Then in our app-routing module, on the edit-server path we add the canDeactivate property. It takes an array, and here we point to our CanDeactivateGuard (which we need to import in the top of the file.)
+Now Angular will run the guard whenever we try to leave this path.
+
+We also need to add the CanActivateGuard to the providers array in the app.module.ts file. (Which also needs to be imported at the top.)
+
+For this to work, we'll need to implement this interface (the one we created - CanComponentDeactivate) in the export class of the edit-server component. (It will also need to be imported at the top of the file.)
+
+This interface now forces us to implement the canDeactivate method in our component, which is important because we'll call this method on our component.
+
+We'll add a canDeactivate() method. We know that it should return an observable, a promise, or a boolean. (We'll also need to import Observable from 'rxjs')
+
+Then in the canDeactivate we provide the actual logic in deciding whether we're allowed to leave this route. This will run whenever the guard is run by the Angular router.
+
+We'll first check if we're allowed to edit it. And then also check if the serverName has been changed. The serverName property is bound via two-way binding to user inputs -- on the input in the HTML file, with ngModel -- so initially it sets to the value we get from the server which was loaded, and we bind it in the TS code (this.serverName = this.server.name;). But as soon as we type we will have some differences. 
+
+So if we have differences on the server name or the server status, and the changes were not saved (changesSaved is false), we want to return a confirm(); dialog where we ask the user if they want to discard the changes.
+
+Otherwise we will return true. Because either nothing was changed, or changesSaved was set to true.
+
+  canDeactivate(): Observable<boolean> | Promise<boolean> | boolean {
+    if (!this.allowEdit) {
+      return true;
+    }
+    if ((this.serverName !== this.server.name || this.server.status !== this.server.status ) && !this.changesSaved) {
+      return confirm('Do you want to discard the changes?');
+    } else {
+      return true;
+    }
+  }
+
+
+# Passing static data to a route
+We can generate an error-page-component.
+In the HTML template we can output an errorMessage.
+Then we make and errorMessage property in the TS file which should be of type string.
+
+In our routes we'll comment out the page-not-found component and instead use the error-page component. (Which we'll need to import at the top of the file.)
+
+We could reach this page from different methods with different errors.
+However in this example we're using the not-found path, so the error messge will be the same for those. We can add the data property to the route in the app-routing module.
+We pass an object, where we can define key/value pairs. 
+{ path: 'not-found', component: ErrorPageComponent, data: {message: 'Page not found!'} },
+
+The error message is static here, but we might reach the error page from another route or other logic and the message should be dynamic there (in the error page component).
+It will be reusable, but for each use case there is a specific message.
+
+Then we want to retreive that message whenever we load our component. We'll need to inject our active route into the constructor od the error-page component. 
+Then in the ngOnInit() this.errorMessage = this.route.snapshot.data['message'];
+
+(If the data could possibly change while we're on this route, we would instead want to use this.route.data and subscribe).
+    this.route.data.subscribe(
+      (data: Data) => {
+        this.errorMessage = data['message'];
+      }
+    );
+
+
+# Resolving dynamic data with the resolve guard
+If we have dynamic data we need to fetch before a route can be rendered.
+In this example we can simulate loading an individual server from a back-end.
+In this use case we need a resolver, which is also a service.
+This will allow us to run some code before a route is rendered. The resolver doesn't decide whether the component should be rendered, instead it will do some pre-loading. It will fetch some data the component will then need.
+Alternatively, we can render the component instantly and then in the onInit of the component we fetch the data (and display some spinner while we're fetching it).
+
+In the server file (for a single server), we'll add a server-resolver.service.ts
+This has to implement the Resolve interface from the Angular router (so we need to import Resolve at the top).
+Resolve is a generic type and it should wrap whatever item or data field we'll fetch here. We'll give it the type definition for our server.
+Resolve<{id: number, name: string, status: string}>
+[vs code says Resolve is deprecated]
+
+The Resolve interface requires us to use the resolve() method.
+It takes two arguments, the route (ActivatedRouteSnapshot), and the state (RouterStateSnapshot).
+It returns either an Observable (which needs to be imported at the top from 'rxjs'), or a Promise which will both be of type Server, or just Server.
+We can define an interface for the Server.
+interface Server {
+  id: number;
+  name: string;
+  status: sting;
+}
+
+Now we need to implement the logic to get this back. 
+
+In the servers service we have a getServer method which will give us back a server. It is synchonous code and will resolve instantly. One possibility in the resolve is to instantly return the data.
+
+So one possibility is (in the resolver service) to inject our server service in the contructor. And when we inject a service into another service we need to add @Injectable()
+
+The easiest way to use the resolver function is to reach out to the servers service and call getServer(). And now we need to know the id of the server. We can use the snapshot because this service will run each time that we re-render the route. (So we don't need to set up an Observable.)
+
+We this resolver in place we add it to app.module providers. 
+
+Then we want to add it to our app-routing module.
+In the route where we want to use it, for example the path that renders the ServerComponent, we add the resolve property that takes a JS object and here we map all the resolvers. We have key/value pairs of the resolvers we want to use (instead of an array like the other guards).
+We'll use server: ServerResolver
+(And we'll need to import the ServerResolver at the top.)
+
+This will now map the data this resolver gives us back; the resolve method will be called when the component is loaded. The data it gives us back will be stored in this server object, in the server property we will have available in this to-be-loaded component. 
+
+In the server component we currently get the server using params, but now we'll use a resolver. 
+Here we can get our server by binding the data observable.
+Just like static data which we passed with this data object, the data returned by our resolver will also go into this data object we have in the to-be-loaded component. 
+So we can listen to any changes. We should use the observable because the server can change when we are already on the page. We know we will get back our data of type Data (we need to make sure we import Data from the Angular router).
+Then we can assign our server by binding to data['server]; In the square brackets we have to use the name we used to assign the resolver to a property (in the route).
+
+    this.route.data
+      .subscribe(
+        (data: Data) => {
+          this.server = data['server'];
+        }
+      );
+
+
+# Understanding Location Strategies
+Out in the real world with an app on a real server, the server hosting our Angular single page application has to be configured so that in a case of a 404 error it returns the index.html file - the file starting and containing our Angular app. 
+All our urls are parsed by the server first. Not by Angular, by the server.
+If we try to use /servers the real server will look for a route on the server, but we don't have one. We only have the one html file. We want Angular to take over and parse this route. But it will never get a chance if the server decides it doesn't know the route. So we need to make sure the web server returns the html file. 
+
+If the above isn't possible, we can fall back to an older method of using a hash sign in our routes. 
+We can enable it in our app-routing module. 
+In the @NgModule imports array, we can add a second argument with the appRoutes configuring the setup of the routes. 
+We'll use the useHash configuration and set it to true (the default is false).
+It informs the web server to only worry about the parts of the url before the hash symbol. It will ignore all the parts of the urls after the symbol. And the part after the hashtag can now be handled by the client, by Angular.
+
