@@ -38,7 +38,7 @@ We set up the select the same way - it's just another type of input.
 # submitting and using the form
 We want to actually see what the user entered. 
 In the app.component.ts we'll add a method, onSubmit(). This should be triggered whenever the form is submitted by the user. And we'll want to output whatever the user entered.
-We first need to call the method. So back in the template, instead of doing a click listener on the button of the form, because the default html behavior would be triggered. And it will also trigger a JS event, the submit event. 
+We first need to call the method. So back in the template, instead of doing a click listener on the button of the form, because the default html behavior would be triggered. And it will also trigger a JS event, the submit event. (The button does need to be of type="submit".)
 Angular takes advantage of this and gives us a directive we can place on the form element (as a whole). It's called ngSubmit and gives us one event we can listen to.
 <form (ngSubmit)="onSubmit()">...</form>
 This ngSubmit will be fired whenever the form is submitted.
@@ -54,4 +54,25 @@ In the onSubmit method in the TS file, we pass form of type HTMLFormElement, and
 onSubmit(form: HTMLFormElement) {
     console.log(form);
 }
+
+In order to get access to the form object, we need to set the local reference (in this case #f) equal to ngForm.
+<form (ngSubmit)="onSubmit(f)" #f="ngForm">
+This asks Angular to give us access to the form object it created automatically.
+
+And then we pass it to the onSubmit method. It will no longer be of type HTMLFormElement, but it will be of type NgForm.
+(in the TS file we need to import NgForm from '@angular/forms').
+  onSubmit(form: NgForm) {
+    console.log(form);
+  }
+
+Then consol.logging form, we see the form object with a value property. NgForm, then form, then value. There we'll see the key/value pairs.
+
+# Understanding form state
+The JS object also has a lot of other built-in properties. It allows us to really understand the state of our form.
+We can see the controls we registered, and each control is of type FormControl (a type made available by Angular).
+Each control has properties also. dirty, disabled, enabled, errors... etc.
+dirty means we changed something about the form
+touched means we clicked into the field(s)
+
+These properties can all be helpful in changing the user experience.
 
