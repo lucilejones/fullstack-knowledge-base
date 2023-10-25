@@ -76,3 +76,74 @@ touched means we clicked into the field(s)
 
 These properties can all be helpful in changing the user experience.
 
+# accessing the form with @ViewChild
+@ViewChild allows us to access a local reference in our TS code. Here we have a local reference that points to the ngForm object (rather than an element); so we can use @ViewChild here (rather than passing the form to the onSubmit function).
+
+In the app component TS file we'll use @ViewChild() in the class. We need to import it from '@angular/core'
+
+Then we want to get access to the element which has the local reference f on it. So we pass f as a string, as an argument, to the @ViewChild(). Then we could store it in a variable named signupForm which will be of type NgForm. 
+@ViewChild('f') signupForm: NgForm;
+
+Then in the onSubmit function, we can output the form:
+console.log(this.signupForm);
+
+This gives us access to the form without passing it to onSubmit. Which can be useful for times when we need to access the form not just at the time we submit it. 
+
+# adding validation to check user input
+We should always still have validation on the server; but we can enhance the user experience by also having it in our application on the frontend. We can check that none of the inputs are empty and that the email address is a valid email address.
+
+Since here we're using the template-driven approach we can only add the validation in the template.
+We can add the required attribute to the inputs.
+<input type="text".... required>
+required is a default HTML attribute, but Angular will detect it and it will act as a selector for a built-in directive shippig with Angular and it will automatically configure the form to take required into account.
+
+On the email input we can add required and email. 
+email is not a built-in HTML attribute, but it is still a directive made available by Angular.
+(A list of all available validators will be in a later lecture)
+
+Angular will track this on a control level and on a form level. It will add some classes to the element: ng-dirty ng-touched, ng-valid, etc. Angular dynamically adds/removes these CSS classes, giving us information about the state of the individual control. With that information we can style these inputs conditionally.
+
+# built-in validators and HTML5 Validation
+https://angular.io/api/forms/Validators
+https://angular.io/api?type=directive
+(in the above directive list search for validator)
+
+We can enable HTML5 validation (by default Angular disables it):
+add the ngNativeValidate to a control in the template
+
+# using the form state
+We can disable the submit button if the form is not valid:
+We'll add some property binding - we'll bind to the disabled property which will set the disabled state to true or false depending on a certain condtion, in this case, whether the form is valid.
+[disabled]="!f.valid">Submit</button>
+We get access to the form with the local reference f on the form element. 
+
+In the stylesheet of the app component, we can add styles for the different classes Angular adds. 
+.ng-invalid {
+  border: 1px solid red;
+}
+However, the above code will add a red border to each input plus the overall form. Angular adds the class to each input and to the form element. And it will default to this even on a firt load/render.
+
+To make it not target the whole form or groups of inputs, we could do the following instead:
+input.ng-invalid {
+  border: 1px solid red;
+}
+
+To make sure the warning doesn't show up til the user clicks in the input and then away, we can add the ng-touched class:
+input.ng-invalid.ng-touched {
+  border: 1px solid red;
+}
+
+We can also add a warning message and add a conditional render:
+<p *ngIf="">Please enter a valid value.</p>
+
+# outputting validation error messages
+We can use the bootstrap class help-block and then only show the message if the input is not valid.
+<span class="help-block">Please enter a valid email.</span>
+
+A way to get access to the control created by Angular is by adding a local reference to the input element and setting it equal to ngModel.
+<input type="text"... #email="ngModel">
+So just like the form directive automatically added by Angular when it detects a form element, the ngModel directive exposes some additional information about the control it creates.
+Then we say we want to attach the span if email is not valid (but has been clicked into by the user).
+<span class="help-block" *ngIf="!email.valid && email.touched">Please enter a valid email.</span>
+
+# set default values with ngModel property binding
