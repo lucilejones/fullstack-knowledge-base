@@ -1,4 +1,6 @@
 # what are pipes?
+Pipes are simple functions we can use in HTML template expressions that accept and initial value and return a transformed value.
+
 Pipes are a feature built into Angular 2 which allow us to transform output in our template. 
 There are different pipes for different types of output, and also synchronous and asynchronous data. The general idea is always the same.
 For example, we might have a username that we want to display in all uppercase. We don't want to actually change the property to be all uppercase, but we can use the uppercase pipe to transform the data when it gets displayed. (uppercase is a built-in pipe; we can also build our own pipes).

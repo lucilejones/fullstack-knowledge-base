@@ -8,9 +8,11 @@ And Angular gives us this - a JS object representation of our form, which makes 
 Angular offers two approaches
 Template-driven: set up the form in the template, in the HTML code, and Angular will automatically infer the structure of the form, which controls the form has, which inputs, etc, and that makes it easier to get started quickly.
 Angular infers the form object from the DOM.
+-more intuitive and simpler; the method infers the structure of the form object from the DOM
 
 Reactive approach: We define the structure of the form in TS code, also set up the html code, and manually connect it. This gives us greater control.
 The form is created programmatically and synchronized with the DOM.
+-more explicit; this method is more complicated, but we gain fine-tuned control and flexibility.
 
 # An example form
 We don't put an action or method attribute on the fom tag in the html because we don't want an http request to be the result of submitting this form. We don't want it sent to a server - we want Angular to handle the form.

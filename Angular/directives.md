@@ -1,11 +1,15 @@
 # Directives
+A directive is how we give instructions to the DOM to control certain elements in Angular
+
 attribute directives - sit on elements, just like attributes; change properties of the DOM
 -look like a normal HTML attribute, possibly with databinding or event binding
 -only affect/ change the element they're added to
+-built-in attribut directives: ngClass, ngStyle, ngModel
 
 structural directives - they also change the structure of the DOM; potentially remove a whole element
 -look like a normal HTML attribute, but have a leading * (for desugaring)
--affect a whole aread in the DOM (elements get added/ removed)
+-affect a whole area in the DOM (elements get added/ removed)
+-built-in structural directives: ngIf, ngFor, ngSwitch
 
 # ngFor and ngIf recap
 *ngFor="let number of numbers"
@@ -70,7 +74,7 @@ Angular is able to render our templates without a DOM and then the property woul
 
 We'll create a new directive. 
 Using the CLI: ng g d better-highlight
-We can also put it into its own folder. better-highlight (and make sure to update the folder bath for the app.module.ts file)
+We can also put it into its own folder. better-highlight (and make sure to update the folder path for the app.module.ts file)
 We could also create a central shared folder or a directives folder.
 
 In the betterHighlightDirective file we're going to inject the better tool.

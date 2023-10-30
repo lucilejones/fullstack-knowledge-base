@@ -1,4 +1,6 @@
 # what is an observable?
+And observable is an interface used to handle various asynchronous or event operations. Observables provide support for passing messages between different sections of the app. Observables are a stram of data that we subscribe to receive info when the data changes.
+
 An observable can be thought of as a data source.
 In our Angular project, an observable is an object we import from a third-party package, rxjs. The observable here is implemented in a way that it follows the observable pattern, so we have an observable and we have an observer. In between, we have a stream - a timeline. On the timeline we can have multiple events emitted by the observable or the data package. (Depending on the data source of that observable.)
 
@@ -160,6 +162,8 @@ Operators allow us to build up a chain of steps we want to filter our data throu
 # Subjects
 With a service and an event emitter.
 There is a better, more recommended, way than using an event emitter. 
+
+Subjects are unique observables that act as both the 'observer' and the 'observable'. Subjects allow us to emit new valus to the subscription stream using the next() method.
 
 A Subject is something we import from 'rxjs' instead of EventEmitter.
 (In this example, in the user.service.ts file)
