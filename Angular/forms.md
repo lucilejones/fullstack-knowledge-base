@@ -15,6 +15,7 @@ The form is created programmatically and synchronized with the DOM.
 # An example form
 We don't put an action or method attribute on the fom tag in the html because we don't want an http request to be the result of submitting this form. We don't want it sent to a server - we want Angular to handle the form.
 
+# TEMPLATE DRIVEN
 # creating the form and registering the controls
 We need to make sure, in the app module, to add FormsModule to the imports array and import it at the top of the file from '@angular/forms';
 With this imported, Angular will automatically create a form for us (a JS representation of the form) when it detects a form element in the HTML code. 
@@ -147,3 +148,124 @@ Then we say we want to attach the span if email is not valid (but has been click
 <span class="help-block" *ngIf="!email.valid && email.touched">Please enter a valid email.</span>
 
 # set default values with ngModel property binding
+To set a default for the select dropdown we can change the way we add ngModel.
+Right now it doesn't have two-way binding; it's just ngModel
+We can use it together with property binding. We'll just use square brackets but no parentheses, so not two-way binding.
+[ngModel]=""
+Then we can bind it, the control, to a value. 
+We could hardcode a string in there (with the single quotation marks), or add a property in the TS file called defaultQuestion and set it to 'pet'.
+
+# using ngModel with two-way binding
+Sometimes we want to instantly react to any changes in the form and not just have access to updates after a submit. Then we get the form object where we can retrieven the value. So far, we've used ngModel either without binding or with one-way binding.
+
+In the secret question section of the form, we'll add a new form group.
+<div class='form-group'>
+  <textarea name="questionAnswer" rows="3" ngModel></textarea>
+</div>
+
+Then we can use ngModel to get acces to whatever the user entered. 
+
+But if we want to repeat the reply and output the answer to the question. Then we create a p tag below and use two-way binding to bind the ngModel to the property answer.
+[(ngModel)]="answer"></textarea>
+
+<p>Your reply: {{ answer }}</p>
+
+We'll need to include the answer property in the TS file and set it initially to an empty string.
+answer = '';
+
+Then that property is updated with every keystroke, but when we hit submit it will be part of the form object and we'll get a snapshot of the value at the time we hit submit.
+
+There are the three ways to use ngModel:
+-with no binding, just to tell Angular that an input is a control
+-one-way binding, in order to give the control a default value
+-two-way binding, to instantly output it or do something with the value.
+
+# grouping form controls
+If on the value object we get when we submit hte form we want to group some things, for example if we want to group the secret question and the answer, and the username and the email, we can give it some structure and then also validate different groups.
+
+On the first group, with the username and email, we already have a wrapping div with the id user-data. We can place another directive on this element: ngModelGroup
+<div id="user-data" ngModelGroup>
+
+This will now group this into a group of inputs; it does need to be set equal to a string. And this will be the key name for this group.
+<div id="user-data" ngModelGroup="userData">
+
+Then if we console.log the form and look at the value, we'll see a useData field with another object that holds the username and email. That also gives us a different setup in the controls object. We now have a userData control with all the properties controls have (like valid, etc).
+
+We can get access to the JS representation by adding a local reference to the element which hold the ngModelGroup directive, here #userData, and then set it equal to ngModelGroup.
+<div
+  id="user-data"
+  ngModelGroup="userData"
+  #userData="ngModelGroup">
+
+This would allow us to (for example) output a message if the whole group is not valid.
+<p *ngIf="!userData.valid && userData.touched">User Data is invalid.</p>
+
+# handling radio buttons
+First we add a property to the TS file: genders = ['male', 'female'];
+Then we can output the genders array in the HTML template.
+We'll make a new div with the class of radio and replicate it for each gender in the array, so we need to loop through.
+<div class="radio" *ngFor="let gender of genders"></div>
+
+In each div we'll have an input (of type radio) wrapped in a label.
+<label>
+  <input type="radio">
+</label>
+
+We'll give it a name (gender - since only one can be selected), and we'll plave ngModel on it to make it a control and we'll set the value equal to gender (the variable of the ngFor loop). 
+<label>
+  <input
+    type="radio"
+    name="gender"
+    ngModel
+    [value]="gender">
+</label>
+
+To output the text, we'll need to add it after with {{ gender }}.
+If we want to set it to a default value we can use one-way binding to have one of the buttons selected by default.
+And we could add the required attribute to the input.
+
+# setting and patching form values
+For the suggest username button, it'd be nice if on clicking it we populate the username input with the suggested username (method in the TS file).
+One way to make this work would be with two-way data-binding.
+
+Another way:
+We do have access to the form through @ViewChild() and we can set the value of one of our inputs. There are two different methods.
+Method one: we can use the setValue() method on our signupForm.
+In the suggestUserName() method:
+this.signupForm.setValue();
+We need to pass a JS object exactly representing our form.
+  suggestUserName() {
+    const suggestedName = 'Superuser';
+    this.signupForm.setValue({
+      userData: {
+        username: suggestedName,
+        email: ''
+      },
+      secret: 'pet',
+      questionAnswer: '',
+      gender: 'male'
+    });
+  }
+
+Then in the HTML template we need to hookup the button. (This button is of type button so it doesn't submit the form.)
+We add a click listener and target the suggestUserName() method.
+(click)="suggestUserName()"
+
+This is not necessarily the best approach, because clicking the button will override whatever the user has typed in any of the inputs. 
+
+The better approach:
+Access the signupForm and the form object on it because signupForm is the container of our form, and then we can use the patchValue() method. 
+this.signupForm.form.patchValue();
+
+This is not available on the signupForm itself, but on the formGroup wrapped inside of it. Here we also pass a JS object, but we only override certain specific controls.
+    this.signupForm.form.patchValue({
+      userData: {
+        username: suggestedName
+      }
+    });
+Then when we click the button it will only add Superuser to the username input and leave all the others with what was already entered. 
+
+[setValue() is also available on the form object, but patchValue() is not available on the signupForm object; setValue() overrides the whole form and patchValue() overrides parts of the form]
+
+# using form data
+
