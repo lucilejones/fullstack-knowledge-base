@@ -337,3 +337,143 @@ onClearPosts() {
 }
 
 We want to subscribe in the component so we can also clear the loaded posts array. So we add a method to set the loaded posts to an empty array. 
+
+# handling errors
+In Firebase (in the browser) we can go to rules
+Right now we're setup in test mode, so read and write access is granted to anyone. We don't need to authenticate any users.
+Max changes his read from true to false (the current setup in Firebase is different from what shows in his video). Then trying to fetch data he gets an error.
+
+Also, it stays in the Loading state and a user wouldn't know that the request failed.
+
+We can add an error to teh fetchPosts().subscribe()
+As we learned in the Observables section, we can pass more than one argument to subscribe. The second argument is a function that triggers whenever an error is thrown, then we can do something to handle to error to provide a better user experience.
+
+We can add a new property in the app component and set it to null initially.
+error = null;
+Then we can add a div in the template to say 'An Error Occured' and display that when error is not null.
+Below that we can output {{ error }} because that could be our error message.
+      <div class="alert alert-danger" *ngIf="error">
+        <h1>An Error Occurred!</h1>
+        <p>{{ error }}</p>
+      </div>
+
+As soon as error gets set to some string, it becomes trueish and the div will show up on the page.
+
+We also want to change the conditions for Loading... to show up if we're fetching and we don't have an error. 
+<p *ngIf="isFetching && !error">Loading...</p>
+
+Then we'll set the error in the error handling function (in the subscribe method).
+  onFetchPosts() {
+    this.isFetching = true;
+    this.postsService.fetchPosts().subscribe(posts => {
+      this.isFetching = false;
+      this.loadedPosts = posts;
+    }, error => {
+      this.error = error.message;
+    });
+  }
+
+By default the error object has a message. (Sometimes more helpful than others - we can tweak that and send our own error message.) Firebase does give a different error key with a better message. We can dive into the error object getting returned to see more info about what's happening. There's a status also, etc.
+
+We need to add the second argument in the subscribe in the ngOnInit also.
+
+# Using Subjects for Error Handling
+This is a different way to handle errors.
+Maybe a use case would be when we send a request and don't subscribe to it in our component.
+
+In our project example when we create a new post we subscribe in the service.
+One option would be to return the observable in the service and subscribe in the component (that wouldn't be wrong).
+
+However, we could use a Subject, which is especially useful if we have multiple places in the application that might be interested in the error.
+
+So we could create a new error property in the posts.service.ts file and set it equal to a new Subject (which needs to be imported from rsjs), and that will give us a string (the error message).
+error = new Subject<string>();
+
+Then in the createAndStorePost function, in the subscribe, where we get that error, we use the Subject and call next() and pass an error message.
+    createAndStorePost(title: string, content: string) {
+        const postData: Post = {title: title, content: content}
+        this.http
+        .post<{name: string}>(
+            'https://academind-http-requests-default-rtdb.firebaseio.com/posts.json',
+            postData
+        )
+        .subscribe(responseData => {
+            console.log(responseData);
+        }, error => {
+            this.error.next(error.message);
+        });
+    }
+
+Then we need to subscribe to that Subject in all the places we're intersted in that error message. In this example we'll subscribe in the ngOnInit:
+this.postsService.error.subscribe(errorMessage => {
+  this.error = errorMessage;
+});
+
+It's a good and recommended practice to unsubscribe if we get rid of this component, so we create a new private property errorSub (in the app component):
+private errorSub: Subscription;
+We need to import Subscription from rxjs. 
+Then we store our subscription in that property (in ngOnInit).
+     this.errorSub = this.postsService.error.subscribe(errorMessage => {
+      this.error = errorMessage;
+    })
+
+Then we import OnDestroy from '@angular/core' (and add it in the implements part of the export class) and in the ngOnDestroy we unsubscribe.
+  ngOnDestroy(): void {
+    this.errorSub.unsubscribe();
+  }
+
+# Using the catchError operator
+In the postsService we can import catchError from 'rxjs/operators'
+
+In this example we can add it in the fetchPosts method in the pipe after map.
+We add the catchError operator and we get our error response here.
+We get the same data we'd get in the second argument of the subscribe method.
+Then in there we could send to analytics server, etc, any generic error handling tasks.
+We could use the Subject and next() the error message here, too; but maybe we have behind-the-scenes stuff we want to do when an error occurs. Log it, send it to our own server, etc.
+Once we're done handling the error we should pass it on. 
+
+So we need to create a new Observable that wraps that error. So we import throwError from rxjs. That is a function that will yield a new observable by wrapping an error. So then we return the observable that is created by throwError and throw the error response.
+            catchError(errorRes => {
+                // send to analytics server, etc
+                return throwError(errorRes);
+            })
+
+# Error handling and UX
+We can add a button in our alert for the user to say ok and get rid of the error message. We can have a click listener with onHandleError()
+<button class="btn btn-danger" (click)="onHandleError()">Okay</button>
+
+Then in the app component TS file we add the method to set this.error back to null.
+  onHandleError() {
+    this.error = null;
+  }
+
+Also, the best thing to do is to reset the isFetching back to false whenever we get an error. So we'll put that in the error function that's part of the onFetchPosts method.
+this.isFetching = false;
+We'll put it in the ngOnInit also.
+
+# Setting Headers
+When sending an HTTP requests, we set the URL, and the data we want to attach. Sometimes we also need to set special headers, like authorization, or content type, or the API needs it.
+Any HTTP method (GET, POST, etc) has an extra last argument which is an object where we can configure the request. 
+We can configure a lot of things, but we'll start with headers.
+Headers takes an object, it's an HttpHeaders object that we need to import from '@angular/common/http'
+We create a new instance of this object, and to this object we can pass a JS object with key/value pairs of our headers.
+        .get<{[key: string]: Post}>(
+            'https://academind-http-requests-default-rtdb.firebaseio.com/posts.json',
+            {
+                headers: new HttpHeaders({ 'Custom-Header': 'Hello' })
+            }
+            )
+
+# Adding Query Params
+Depending on the API we're working with, we can set query params to the API endpoints. Firebase supports one.
+We set parameters by adding the params key in the same config object where we added headers. And we set it to a new HttpParams object (also imported from '@angular/common/http').
+On the HttpParams() we call set, and we can set a param name and a value.
+We can set it to print (a query param supported by Firebase) and pretty. This just changes the format in which Firebase returns its data.
+{
+  headers: new HttpHeaders({ 'Custom-Header': 'Hello' }),
+  params: new HttpParams().set('print', 'pretty')
+}
+
+Then when we run fetchPosts and look in the Network tab we'll see that ?print=pretty got added to the end of the URL.
+
+To attach multiple params, we create a searchParams object and append the next params to it. (Look this up more if needed.)
