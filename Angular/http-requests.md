@@ -477,3 +477,85 @@ We can set it to print (a query param supported by Firebase) and pretty. This ju
 Then when we run fetchPosts and look in the Network tab we'll see that ?print=pretty got added to the end of the URL.
 
 To attach multiple params, we create a searchParams object and append the next params to it. (Look this up more if needed.)
+
+# observing different types of responses
+Sometimes we need the whole response object. Maybe we need the headers or the status, etc. In these cases we can change the way Angular parses the resonse and tell it to give us the whole object instead of the unpacked, extracted response data (from the body).
+To do that we add an extra argument to configure the request (in this example we'll do it in our post request).
+We change the observe key. observe takes a couple of values. 'body' is the default.
+That means we get the response data extracted and converted to a JS object automatically.
+We can change this to 'response'
+        .post<{name: string}>(
+            'https://academind-http-requests-default-rtdb.firebaseio.com/posts.json',
+            postData,
+            {
+                observe: 'response'
+            }
+        )
+With this we'll get back the full HttpResponse object. (in the console.log(responseData))
+We can still get access to the body with responseData.body
+
+In the deletePosts function we can use observe again, but this time we'll change it to 'events'
+We need to import an operator from rxjs in order to be able to look at events: tap
+tap allows us to execute some code without altering the response. We can do somethign with the response but not disturb our subscribe function and the functions we passed as arguments to subscribe.
+So we add .pipe(tap) and we get an event.
+    deletePosts() {
+        return this.http.delete('https://academind-http-requests-default-rtdb.firebaseio.com/posts.json',
+        {
+            observe: 'events'
+        }
+        ).pipe(tap(event => {
+            console.log(event);
+        }))
+    }
+
+It won't interupt the normal data flow. We don't need to return anything. It just taps in there to do something but lets the response pass through.
+
+Then if we console.log(event) when we clear the posts, we get two outputs, two events. One is an object with type: 0, and the other is the HttpResponse object (which has a type: 4).
+
+Different types of events are encoded with numbers.
+If we need really granular control over how we update the UI we can check the event types with an enum we can import from '@angular/common/http'. This is supported in TS only, and for JS it is just a map of numbers. It understands which number stands for which type of event.
+if (event.type === HttpEventType.Sent)
+there's also .Response, .User, etc.
+
+We could check whether we get back the response, and if so we can log the event body.
+if (event.type === HttpEventType.Response) {
+  console.log(event.body);
+}
+
+We could use if (event.type === HttpEventType.Sent) and then run some code to update the UI to let the user know the data was sent.
+
+# Changing the response body type
+We can also configure the responseType. The default here is 'json', which means the response data. This tells Angular it should parse it and convert it to a JS object.
+We can set the responseType to 'text' which lets Angular know it will be text and to not try to convert it to a JS object. It could be a blob if it's a file. (We can learn more in the docs.)
+{
+  observe: 'events',
+  responseType: 'text'
+}
+
+# introducing interceptors
+Right now the way we've set up our code, whenever we want to configure something like search params, we're doing it on a per request basis. And often this is the setup we want. 
+However, there might be cases where we want to configure, for example, the header for all of our outgoing requests. For example, when we need to authenticate a user. We wouldn't want to manually configure every request.
+
+We'll create a new file. Called auth-interceptor.service.ts
+(This isn't using real authentication, but it is an example.)
+
+We'll export a class AuthInterceptorService with implements HttpInterceptor (which we need to import from '@angular/common/http')
+This interface forces us to use the intercept method, which will get two arguments:
+first - request object of type HttpRequest (that we need to import); it's a generic type, and we'll set this to <any>
+second - next: a function that will forward the request becayse the interceptor will run code before the request leaves our app, before it is really sent, and right before the response is forwarded to subscribe, so we need to call next to let the request continue on its journey. next is of type HttpHandler (which also needs to be imported)
+
+So this code will run right before the request leaves our application.
+For example, we could console.log('Request is on its way');
+then we should return the result that next gives us. next is an object with an important method that will allow us to let the request continue its journey - the handle method we have to call to which we pass the request object.
+export class AuthInterceptorService implements HttpInterceptor {
+    intercept(req: HttpRequest<any>, next: HttpHandler) {
+        console.log('Request is on its way');
+        return next.handle(req);
+    }
+}
+
+Then we have to provide that service.
+In the app.module.ts file we add a new element to the providers array: a JS object with three keys. 
+1. provide which if of type HTTP_INTERCEPTORS (which needs to be imported from '@angular/common/http')
+This is the token by which this injection can later be identified by Angular.
+2. 
