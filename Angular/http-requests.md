@@ -556,6 +556,82 @@ export class AuthInterceptorService implements HttpInterceptor {
 
 Then we have to provide that service.
 In the app.module.ts file we add a new element to the providers array: a JS object with three keys. 
-1. provide which if of type HTTP_INTERCEPTORS (which needs to be imported from '@angular/common/http')
-This is the token by which this injection can later be identified by Angular.
-2. 
+1. provide, which is of type HTTP_INTERCEPTORS (which needs to be imported from '@angular/common/http')
+This is the token by which this injection can later be identified by Angular. It will know that all the classes we provide on that token, using that identifier, should be treated as HTTP interceptors and should run their intercept method whenever a request leaves the application.
+2. useClass, where we now point at the interceptor class we want to add 
+Here that would be the AuthInterceptorService (which we also need to import)
+3. multi, and we set it to true (this lets Angular know this interceptor should not replace other interceptors)
+providers: [
+  {
+    provide: HTTP_INTERCEPTORS,
+    useClass: AuthInterceptorService,
+    multi: true
+  }
+],
+This is a dependency injection supported by Angular that allows us to register a service under a different identifier.
+Angular will do the rest; it will automatically grab all our HTTP interceptors and run their intercept method whenever a request leaves the application.
+This code (the console.log(Request on it's way)) runs for every request that leaves the app. If we want to restrict the requests this executes on, we can do that in the interceptor (the service file).
+We can do an if with the req.url (since we have the request object here), and only send with requests to a certain url if we want.
+
+# Manipulating request objects
+Inside an interceptor we can modify the request object. However, the object itself is immutable. So we have to create a new one and call req.clone. And inside the clone method we can pass in a JS object where we can overwrite the core things. New url, new headers, new params, etc.
+We can use req.headers.append() to keep all the original headers and add a new one.
+const modifiedRequest = req.clone({headers: req.headers.append()})
+we can put Auth as the key and xyz as the value.
+const modifiedRequest = req.clone({headers: req.headers.append('Auth', 'xyz')})
+Then in the next.handle() we don't forward the original request, but the modifiedRequest.
+That's a typical use case for an interceptor. We change the request and then forward the modified request.
+(And if we only wanted to append the header to certain requests, we could use an if check with the req.url, for example)
+
+# response interceptors
+We not only have access to request interceptors; we can use response interceptors.
+We do this by adding something to handle(), because handle actually gives us an observable. (Our request is an observable to which we subscribe)
+So in the handle we get teh request with the response in it wrapped in an observable.
+So, we can add .pipe() and do something with the response if we want.
+We could add the map operator to change the response (but make sure to not change it in a way that the rest of the app breaks).
+Or we can use tap (which we need to import) in order to look into the response.
+Here in tap we get an event (always).
+We can check if the event type is equal to the HttpEventType (that we need to import) of type Response.
+Then we can console.log that the response has arrived and console.log the event body (which will be the response body.)
+        return next.handle(modifiedRequest).pipe(tap(event => {
+            if (event.type === HttpEventType.Response) {
+                console.log('Response arrived, body data: ');
+                console.log(event.body);
+            }
+        }));
+
+# multiple interceptors
+(we'll see interceptors again in the authentication section)
+We can add another interceptor: logging-interceptor.service.ts
+export class LoggingInterceptorService implements HttpInterceptor {
+    intercept(req: HttpRequest<any>, next: HttpHandler) {
+        console.log('Outgoing request');
+        console.log(req.url)
+        return next.handle(req).pipe(tap(event => {
+            if (event.type === HttpEventType.Response) {
+                console.log('Incoming response');
+                console.log(event.body);
+            }
+        }));
+    }
+}
+
+Then we can take out the logging in the auth interceptor.
+So the auth interceptor is attaching the auth header and the other interceptor is repsonsible for logging.
+
+The order we provide the interceptors matters because that's the order they'll be exectuted. (Also need to import the LoggingInterceptorService from the file path)
+  providers: [
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptorService,
+      multi: true
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: LoggingInterceptorService,
+      multi: true
+    }
+  ],
+
+# Official docs
+https://angular.io/guide/http
