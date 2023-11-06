@@ -286,3 +286,145 @@ In the template we can add a div to show when there is an error.
 </div>
 
 # improving error handling
+Firebas has common error codes. We can check for these and provide a more helpful error message.
+In the auth component, we can update the error case (rename the parameter to be the errorRes and add a switch):
+                errorRes => {
+                    console.log(errorRes);
+                    switch (errorRes.error.error.message) {
+                        case 'EMAIL_EXISTS':
+                            this.error = 'This email already exists';
+                    }
+                    this.error = 'An error occured.';
+                    this.isLoading = false;
+                }
+
+We could do the above in the component; however, handling the error in the component is not necessarily the best way to do it. It moves too much logic into the component (rather than updating the UI).
+Instead we can use an rxjs operator that will allow us to handle errors in the auth service (in the observable chain we're setting up).
+
+So in the auth service, in the signup function, we can .pipe() on the observable and add rxjs operators.
+We'll use the catchError operator (and import it from rxjs/operators). We'll also need to import throwError from rxjs.
+throwError will create a new observable that wraps an error.
+So we can move the switch from the component to the service.
+Though we need to do it a bit differently, adding a new variable, errorMessage.
+    signup(email: string, password: string) {
+        return this.http.post<AuthResponseData>('url',
+            {
+                email: email,
+                password: password,
+                returnSecureToken: true
+            }
+        ).pipe(catchError(errorRes => {
+            let errorMessage = 'An unknownn error occurred.';
+            switch (errorRes.error.error.message) {
+                case 'EMAIL_EXISTS':
+                    errorMessage = 'This email already exists';
+            }
+        }));
+    }
+
+The switch statement could fail if the error we get doesn't have that same format, which migh tbe the case if we get a network error. So we can use an if to check whether it has an error key with a nested error key. If it doesn't, we'll return throwError and wrap the error message so we'll throw an observable that wraps the error message.
+            if (!errorRes.error || !errorRes.error.error) {
+                return throwError(errorMessage);
+            }
+
+We can add more cases to our switch statement later. But after, we want to return our throwError with the errorMessage.
+
+Then in the component in the error case we just get the error message because we subscribe to an observable here which in the error case will be an observable that only contains a message.
+So we can console.log it, and also set this.error = errorMessage.
+
+# sending login requests
+In the auth service we'll create a new login method, which also takes an email and password. 
+We still have to send a request, and we need to check the Firebase docs for the URL and that it's a post request. (We'll also need the API key)
+    login(email: string, password: string) {
+        this.http.post('url',
+            {
+                email: email,
+                password: password,
+                returnSecureToken: true
+            }
+        );
+    }
+
+We get back almost the same response as in the login, but we'll also get an additional field, registered which is a boolean.
+So in the auth service, in our AuthResponseData interface, we can add an optional registerd property.
+interface AuthResponseData {
+    kind: string;
+    idToken: string;
+    email: string;
+    refreshToken: string;
+    expiresIn: string;
+    localId: string;
+    registered?: boolean;
+}
+
+So we can add the angle brackets after post and inform TS about the type of the response.
+this.http.post<AuthResponseData>('url',...)
+
+And just like the signup, we want to return the observable so we prepare the observable here, but can subscribe in the auth component.
+return this.http.post<AuthResponseData>('url',...)
+
+Then in the auth component, in the isLoginMode we can reach out to the this.authService.login method and also forward email and password.
+Then we can grab the same subscribe block from the signup method (because we'll still want to control the loading state and the error).
+.subscribe(
+                resData => {
+                    console.log(resData);
+                    this.isLoading = false;
+                },
+                errorMessage => {
+                    console.log(errorMessage);
+                    this.error = errorMessage;
+                    this.isLoading = false;
+                }
+            );
+
+Since it's the exact same code, we can write it up differently and not repeat ourselves.
+
+We can create a new variable (within the onSubmit) called authObs (for auth observable), which will be of type Observable, that we need to import from rxjs.
+That observable is a generic type, so we need to identify what kind of data we'll yield, and that will be out AuthResponseData. So we need to export that interface from the auth service to we can import it into the auth component. 
+The idea is that we change the observable that authObs variable holds in the two branches of our if check (for the login vs signup mode). Then after the if check, one of the two observables will be stored there, so we can subscribe on that observable after the if block. And we only change what's in the observable inside the if block.
+So for logging in, we set authObs = this.authService.login(email, password)
+        if (this.isLoginMode) {
+            authObs = this.authService.login(email, password);
+        } else {
+            authObs = this.authService.signup(email, password);
+        }
+
+        authObs.subscribe(
+            resData => {
+                console.log(resData);
+                this.isLoading = false;
+            },
+            errorMessage => {
+                console.log(errorMessage);
+                this.error = errorMessage;
+                this.isLoading = false;
+            }
+        );
+
+Then when we login a user, we get the response data back in the console. But we do need to set up error handling for when a user tries to login with email and password that are not saved as a user.
+
+# login error handling
+It'd be nice to share the error handling logic between both the signup and the login observables.
+We can create a new private method in the auth service that we call handleError and it receives and errorRes which is of type HttpErrorResponse (imported from @angular/common/http). 
+    private handleError(errorRes: HttpErrorResponse) {}
+
+In the code block we can take what was previously in the catchError method in the .pipe() on the signup method.
+    private handleError(errorRes: HttpErrorResponse) {
+        let errorMessage = 'An unknownn error occurred.';
+        if (!errorRes.error || !errorRes.error.error) {
+            return throwError(errorMessage);
+        }
+        switch (errorRes.error.error.message) {
+            case 'EMAIL_EXISTS':
+            errorMessage = 'This email already exists';
+        }
+        return throwError(errorMessage);
+    }
+
+Then in catchError, we pass this.handleError.
+.pipe(catchError(this.handleError));
+
+Then we can add that same pipe to the login observable.
+We'd want to add to the switch case the EMAIL_NOT_FOUND and/or INVALID_PASSWORD errors (and possibly give the same error message to not give away whether it's the email or password that's incorrect).
+
+# creating and storing the user data
