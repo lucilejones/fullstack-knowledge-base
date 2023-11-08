@@ -568,4 +568,93 @@ The opposite should be true on the Authenticate Link: *ngIf="!isAuthenticated"
 Logout should only be visible if we are authenticated, same with the dropdown.
 
 # adding the token to outgoing request
+We have to attach the token to our outgoing requests (to let Firebase know).
+In the data-storage service, where we have storeRecipes and fetchRecipes, these requests need to have the token attached to them (the token we're storing in the user object in the auth service).
 
+storeRecipes() {
+    const recipes = this.recipeService.getRecipes();
+    this.http
+        .put(
+            'URL',
+            recipes
+        )
+        .subscribe(response => {
+            console.log(response);
+        });
+}
+
+fetchRecipes() {
+    return this.http
+        .get<Recipe[]>(
+            'URL'
+        )
+        .pipe(
+            map(recipes.map(recipe => {
+                return {
+                    ...recipe,
+                    ingredients: recipe.ingredients ? recip.ingredients : []
+                };
+            });
+            )
+        )
+}
+
+We'll inject the authService into the data-storage service (and make sure we add the import). Then we need to get access to the user in both the store and fetch methods.
+We could set up a subscription, but we don't care about every change to the user. We just want to get the token of the currently authenticated user. 
+So in the auth service we should also store the token not through a subject, but in a way that we can get on-demand. We can store the token in a variable which is null to start, where we set the token whenever we emit a new user.
+However, we can use a different kind of subject. 
+the user = new Subject is a subject to which we subscribe and we get info whenever new data is emitted.
+rxjs offers a different kind of subject called a BehviorSubject, (also imported from rxjs) and generally behaves just like the other subject: we can call next() to emit a value, and we can subscribe to it to be informed about new values.
+user = new BehaviorSubject<User>();
+The difference is that BehaviorSubject gives subscribers immediate access to the previously emitted value even if they haven't subscribed at the point of time that value was emitted. That means we can get access to the currently active user, even if we only subscribe after that user has been emitted.
+So when the fetch request happens, we get access to the latest user even though when they logged in (before) is when the new user was emitted.
+BehaviorSubject needs to be initialized with a starting value, which in this case will be null.
+user = new BehaviorSubject<User>(null);
+It has to be a user object, and null is a valid replacement, because we don't want to start off with a user.
+
+We don't need to change anything in the auth service; we still emit our user with the next() function, but in our data-storage service now we can reach out to the auth service user and get the currently active user.
+
+So in the fetch method, when we reach out to the auth service, and to the user. We don't want to set up an ongoing subscription, and to make sure we only subscribe once we use .pipe() and a special operator rxjs gives us, the take operator (also imported from rxjs/operators). take is called as a function and we pass a number to it. If we pass one, we're saying we only want to take one value from that observable and then it should unsubscribe.
+We're not getting future users, because we're just getting them on-demand whenever fetchRecipes is called.
+
+fetchRecipes() {
+    this.authService.user.pipe(take(1)).subscribe()
+}
+
+Then in subscribe we get our user object, but only once.
+We'll also need to pipe the two observables (the user observable and the http observable) together into one big observable.
+We need to add another operator to the pipe for the user observable, exhaustMap. 
+exhaustMap waits for the first observable (the user observable) to complete, which will happen after we took the latest user. Then it gives us the user, so in exhaustMap we pass a function; there we get the data from the previous observable, and now we return a new observable which will replace our previous entire observable in that entire observable chain. 
+We start with a user observable, and once we're done with that, this will be replaced in that observable chain with the inner observable we return inside of the function we pass to exhaustMap. So in there we'll return the http request. Then we add the other two operators (map and tap) as next steps after the exhaustMap. Then we return the overall observable. This means we can still subscribe to that observable return by retchRecipes. But inside we utilize this user observable to get the user out of it one time.
+
+fetchRecipes() {
+    return this.authService.user.pipe(take(1), exhaustMap(user => {
+        return this.http
+        .get<Recipe[]>()(
+            'URL'
+        )
+    }), 
+    map(recipes => {
+        return recipes.map(recipe => {
+            return {
+                ...recipe,
+                ingredients: recipe.ingredients ? recipe.ingredients : []
+            };
+        });
+    }),
+    tap(recipes => {
+        this.recipeService.setRecipes(recipes);
+    })
+    );
+}
+
+For Firebase, we add the token as a query parameter in the url.
+We can do it manually, by setting a question mark and then the parameter name has to be auth. 
+'URL.json?auth=' + user.token
+Or we add a second argument to the get method which is an object where we can set the params. We call the new HttpParams and set the auth equal to user.token. (HttpParams needs to be imported from @angular/common/http)
+'URL.json',
+{
+    params: new HttpParams().set('auth', user.token)
+}
+
+If the token is invalid, the request will fail. Later we'll add code to automatically logout a user when a token has expired.
