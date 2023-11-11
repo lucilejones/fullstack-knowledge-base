@@ -131,3 +131,48 @@ Also we need to cut entryComponents from app module and add it shared module.
 Then we import the shared module to the app module.
 
 # understanding the core module
+All modules are created the same way with NgModule, but there are different types based on what we put in them and how we use them.
+The core module can make the app module a bit leaner.
+For example, we can create a core module to hold/handle two services (to take them out of the app module), and then we just import the core module into the app module.
+Or we can use @Injectable with providedIn: 'root' and then we don't need to provide them in the app module or core module.
+(Max recommends providedIn)
+
+In the recipes app, in teh app.module, there are the ShoppingListService, the RecipeService, and the HTTP Interceptor. (There's also a DataStorageService that's just providedIn: 'root' in the data-storage-service.ts file - that one doesn't need to be in the app module or core module; it is still available application-wide)
+The core module provides these in a separate module to have a place to see all the core services of the app.
+
+Interceptors, however, have to be added to the providers array.
+We don't need to export services, they're automatically injected on the root level.
+Then in the app.module, we import CodeModule.
+
+# adding an Auth Feature Module
+Now in the app.module we do still need to keep the HttpClientModule because it sets up some global services (the injectbale HTTP service), and we also keep the app-routing module and the other modules we created.
+
+# understanding Lazy Loading
+So far what we've done separating in the different modules, it just helps with making the files leaner and maintaining code, etc. But it won't actually influence performance.
+Using multiple feature modules is a prerequisite for lazy loading.
+
+Right now, when we visit any page, we're loading everything - all the page views.
+It'd make more sense to only load pages when we actually visit them.
+
+With lazy loading, we only initially load the root route content - only the app module code and the code of the components registered there. And we don't load the other modules. Only when we visit another route/module.
+We initially download a smaller code bundle, and we dowload more code when we need it.
+
+# implementing Lazy Loading
+If we're using Angular 8+, there's a new way to specify lazy-loading routes.
+Instead of:
+const routes: Routes = [{
+  path: 'your-path',
+  loadChildren: './your-module-path/module-name.module#ModuleName'
+}];
+
+We use:
+const routes: Routes = [{
+  path: 'your-path',
+  loadChildren: () => import('./your-module-path/module-name.module').then(m => m.ModuleName)
+}];
+
+Then in the tsconfig.json file we need to use
+"module": "esnext", instead of "module": "es2015",
+
+This syntax replaces the 'string-only' approach and will give better IDE support.
+
