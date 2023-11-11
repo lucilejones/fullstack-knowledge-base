@@ -176,3 +176,78 @@ Then in the tsconfig.json file we need to use
 
 This syntax replaces the 'string-only' approach and will give better IDE support.
 
+For lazy loading to work our feature module needs to bring its own routes, its own route congif, with .forChild().
+In the recipes routing file, we change the recipes path to an empty string: ''
+Then we'll add that path back into the app routing module: 'recipes'
+The recipes routing module needs that empty string path because we're already on the /recipes path that we laid out in the app.module. We don't want to end up with /reipces/recipes
+
+Then instead of adding a component, we add loadChildren which is a special property in the route config; it tells Angular to only load the content and module this points at when the user visits this path.
+Then we set loadChildren to a string which is the path we want the module to load.
+Then at the end we need to add the name of the Module.
+Angular will go to that path and then try to dynamically import a specific object from that file; we have to tell Angular the name of the export class in that file (ex. RecipesModule). We put a hash before the module name.
+
+Now the code will be split at that point. So everything at that path - the module and everything the module uses - will be put into a separate code bundle which is then downloaded and parsed on demand as soon as a user visits that page but not sooner.
+
+The newer syntax for loadChildren doesn't take a string, but an anonymous arrow function. In the function body we call import (dynamically as a function). The to import we pass the path to the module. And import resolves a promise, so we can call .then(). There we pass in a function which receives the module (so we use m for the argumant), then on the module object we can extract the RecipesModule.
+
+After any changes to the lazy loading we'll want to restart the ng serve for it to have an effect.
+
+We get an error because we're still importing the RecipesModule into the app module. If we have it set up with lazy loading in the routes module, we need to not include it in the imports array in the app.module.ts. (Otherwise we're trying to load the RecipesModule both eagerly and lazily).
+
+# more lazy loading
+Doing the same thing for the shopping-list module and the auth module.
+
+# preloading lazy-loaded code
+The way we have the code set up right now, the code is downloaded and parsed right when we need it, which leads to a very tiny delay.
+We can tell Angular to preload lazy-loaded modules to avoid this delay.
+We go to our root router module (in this project in the app-routing.module.ts) and pass a second argument to the RouterModule.forRoot(); it's an object where we can configure the root router and we can set up a preloading strategy. The deafult is no preloading, so we can change it to PreloadAllModules. (Which also needs to be imported from the Angular router.)
+RouterModule.forRoot(appRoutes, {preloadingStrategy: PreloadAllModules})
+
+Now Angular will still split the code into separate bundles, but it'll preload the other modules as soon as possible.
+Then the initial bundle is still kept small so the initial download is fast, but then when the user is browsing that first page, we preload these additional code bundles so later navigation requests are faster.
+(We can also add our own preloadingStrategies the maybe specify only preloading certain modules, etc)
+
+# Modules and services
+Where we provide services affects the instances of the services we're working with.
+We can provide services in the app module, in the app component or other component, we can add services to providers of any eager-loaded modules, and we can add services to providers of lazy-loaded modules. And we can provide services by adding the providedIn - and that's the recommended method for all services we plan on providing in app.module otherwise.
+
+When we provide a service in the app module or with providedIn root, the service - the same instance of that service - is available application-wide. 
+If we provide a service inside a component, the service is only available for dependency injection inside of that component tree; and all these components will share the same instance. Even if we provide it to siblings, each sibling component tree has access to its own service instance. 
+If we add a service to providers of an eager-loaded module, everything is bundled together initially, so those services will be available application-wide with the same instance.
+If we add a service to providers of a lazy-loaded module, there the service is only available in that loaded module and it gets its own instance. (Even if we provide the service in the app module and in the lazy-loaded module, the lazy-loaded module will get a separate instance.) This might be desired behavior, it might not.
+
+When we provide a service in the app module or in @injectable, we use the root injector (the root dependency injection mechanism of Angular). When we inject it in a component, we use the component-specific injector which is not the root injector.
+In an eager-loaded module the root injector is used, but with a lazy-loaded module a separate child injector is created by Angular for that module and that module has its own instance of the service. 
+The default should be that we use the app module or @Injectable.
+There might be use cases where we only need to provide a service for a certain component tree.
+Eagerly-loaded modules should pretty much never provide services.
+In a lazy-loaded module we can add a service to providers if we deliberately want to have a separate instance of the service there. Otherwise we can have strange bugs.
+
+# Loading Services
+
+# Ahead-of-Time Compilation
+Ahead-of-Time (AoT) vs Just-in-Time (JiT)
+One other optimization technique we should perform before we ship our app to production - before we deploy the app to a server.
+Angular will parse our templates and then update the real DOM based on the instructions in our templates (the templates have Angular-specific code).
+JS and the browser don't understand our templates.
+When we use the TS compiler to compile our TS code into JS code (which the browser understands), we also have another compiler in that build process working behind the scenes as part of ng serve, which is the Angular compiler (included in the Angular framework). THe Angular compiler compiles template syntax into JavaScript DOM instructions. It takes the compiled JS code and our templates and translates all the logic data into concrete instructions that update the real DOM. This by default happens all in the browser, becuase the Angular compiler is part of the Angular code we're shipping. 
+This process is called Just-in-Time compilation. Because the Angular templates are compiled just in time when the rendering occurs in the browser.
+The obvious downside is that this process takes time, and the Angular compiler is actually quite large.
+Instead, we can do that compliation during development as part of the build process and then not have the Angular compiler be part of our app.
+That process is called Ahead-of-Time compilation.
+The Angular template compiler runs during the build process before the app is deployed.
+
+The default JiT compilation is better for debugging and fast updating of the running application.
+But for production and uploading to a server, we want to optimize our code as much as possible and shrink it to as small of a bundle as possible.
+We do that with the command: ng build --prod
+This command takes our Angular application and instead of spinning up a development server, but builds the entire app into a few files which we can then deploy.
+This command uses the Ahead-of-Time compilation. 
+
+We do get an error (the JiT compiler is a bit more forgiving than the AoT compiler).
+Max moves some code out of the template into the TS code.
+
+The build command will create a new dist folder - it has the project name and files with the content of our app, but now bundled and optimized.
+
+
+# official docs:
+https://angular.io/guide/ngmodules
