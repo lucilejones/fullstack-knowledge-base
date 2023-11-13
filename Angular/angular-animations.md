@@ -50,5 +50,27 @@ In the template, we'll set the width and height of the div:
 
 Back in the TS code we want to set our hightlighted state.
 
+# Switching between states
+Right now we don't have a way in our code to transition between states.
+We do have the animate button with the method onAnimate(), so we can create that method in our TS code.
+In that method it'll check if the state is already normal and switch it to highlighted, or if it's not normal, switch it to normal.
+  onAnimate() {
+    this.state === 'normal' ? this.state = 'highlighted' : this.state = 'normal';
+  }
+
+[This doesn't initially work for Max because we were using 'backgound-color' and backgroundColor for the property names in the states. Theoretically it should work, but it doesn't.]
+
+Now we want to animate the transition.
+
+# Transitions
+In our animations trigger, on the same level as the state method, we'll implement the transition method. (Which also needs to be imported). This will allow us to define what the transition should look like.
+Transition expects as a first argument the first direction: the default state, then an arrow, and the other state.
+The second argument specifies what to do. We use animate (which also needs to be imported.) Then we set up HOW to animate it.
+We pass a number, the number of miliseconds.
+(More advanced use cases have some in-between styles)
+
+Then we need to specify a transition for the other direction.
+      transition('normal => highlighted', animate(300)),
+      transition('hightlighted => normal', animate(800))
 
 
