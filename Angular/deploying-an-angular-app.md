@@ -62,3 +62,21 @@ Once it's finished it'll give us a hosting URL
 
 
 When deploying it's important to make sure our server is configured to always serve the index.html file.
+
+
+# notes from class 11/13
+Hosting options: Firebase, Vercel, Netlify
+in the package.json file, under version we add
+"type": "module",
+(Maybe won't need - an ES6 thing?)
+
+Then we run ng build
+
+Then install the firebase tools. Follow prompts, etc.
+
+firebase init hosting
+when it asks for an existing project, that means a project in the firebase console.
+the public directory needs to be dist/project-name
+
+run a build script before every deploy? y
+the script that should be run is npm run build
