@@ -270,4 +270,42 @@ Then when we click the button it will only add Superuser to the username input a
 [setValue() is also available on the form object, but patchValue() is not available on the signupForm object; setValue() overrides the whole form and patchValue() overrides parts of the form]
 
 # using form data
+Under the form in the template, we set up a row to display the data.
+We'll only want to output this once the form has been submitted and then populate it with the data from the form.
+  <div class="row">
+    <div class="col-xs-12">
+      <h3>Your Data</h3>
+      <p>Username: </p>
+      <p>Mail: </p>
+      <p>Secret Question: </p>
+      <p>Answer: </p>
+      <p>Gender: </p>
+    </div>
+  </div>
 
+In the TS file we create a new property called user, which is a JS object with all the properties.
+Then when we submit the form we want to update that object.
+  onSubmit() {
+    this.submitted = true;
+    this.user.username = this.signupForm.value.userData.username;
+    this.user.email = this.signupForm.value.userData.email;
+    this.user.secretQuestion = this.signupForm.value.secret;
+    this.user.answer = this.signupForm.value.questionAnswer;
+    this.user.gender = this.signupForm.value.gender;
+  }
+
+We set up a new property submitted, and initially set it to false, then change it to true.
+Then in our template we place *ngIf on the row to only dispaly is submitted is true.
+
+# resetting forms
+We can access the form which is fetched directly from our template with @ViewChild, and then we can call reset()
+
+this.SignupForm.reset();
+
+This will empty all the inputs as well as reset the state, like valid, touched, etc.
+We can use setValue() and pass in the same object to reset() in order to reset the form to specific values. 
+
+
+Template-Driven forms might be the best choice for most use cases, but there is the other approach.
+
+# introduction to the Reactive Approach
