@@ -35,3 +35,112 @@ So we pass whatever we're testing, here we pass app to expect, and say we expect
 # Running Tests (with the CLI)
 ng test
 
+# Adding a component and some fitting tests
+In the User component test file:
+
+import { TestBed } from '@angular/core/testing';
+import { UserComponent } from './user.component';
+
+describe('Component: User', () => {
+    beforeEach(() => {
+        TestBed.configureTestingModule({
+            declarations: [UserComponent]
+        });
+    });
+
+    it('should create the app', () => {
+        let fixture = TestBed.createComponent(UserComponent);
+        let app = fixture.debugElement.componentInstance;
+        expect(app).toBeTruthy();
+    });
+});
+
+# Testing dependencies: components and services
+Max creates a simple user service. To add that to the test, we import the UserService in to the user testing folder and add the following:
+it('should use the username from the service', () => {
+    let fixture = TestBed.createComponent(UserComponent);
+    let app = fixture.debugElement.componentInstance;
+    let userService = fixture.debugElement.injector.get(UserService);
+    expect(userService.user.name).toEqual(app.user.name);
+});
+
+But one thing is missing here that happens automatically in the browser. We need to add change detection (to update our properties, etc after the injection).
+fixture.detectChanges();
+
+it('should use the username from the service', () => {
+    let fixture = TestBed.createComponent(UserComponent);
+    let app = fixture.debugElement.componentInstance;
+    let userService = fixture.debugElement.injector.get(UserService);
+    fixture.detectChanges();
+    expect(userService.user.name).toEqual(app.user.name);
+});
+
+Then testing for if the username displays when the user is logged in but doesn't display when the user isn't logged in.
+We don't need the injector for this test, but we do need to set isLoggedIn to true.
+
+it('should display the username if user is logged in', () => {
+    let fixture = TestBed.createComponent(UserComponent);
+    let app = fixture.debugElement.componentInstance;
+    app.isLoggedIn = true;
+    fixture.detectChanges();
+    let compiled = fixture.debugElement.nativeElement;
+    expect(compiled.querySelector('p').textContent).toContain(app.user.name);
+});
+
+it('shouldn\'t display the username if user is not logged in', () => {
+    let fixture = TestBed.createComponent(UserComponent);
+    let app = fixture.debugElement.componentInstance;
+    fixture.detectChanges();
+    let compiled = fixture.debugElement.nativeElement;
+    expect(compiled.querySelector('p').textContent).not.toContain(app.user.name);
+});
+
+# Simulating async tasks
+Max creates a DataService to simulate an async operation
+We don't want to call the actual getDetails method because we don't want to actually reach out to a server during testing. We'll create fake implementation.
+spyOn means we listen to a method that we specify.
+We would expect data to be undefined in the beginning, but then the data should change during run time. We have to use the async function (that's imported from angular/core/testing) and wrap the callback with that function.
+Then in the test file:
+
+it('should fetch data successfully if called asynchronously', async(() => {
+    let fixture = TestBed.createComponent(UserComponent);
+    let app = fixture.debugElement.componentInstance;
+    let dataService = fixture.debugElement.injector.get(DataService);
+    let spy = spyOn(dataService, 'getDetails')
+        .and.returnValue(Promise.resolve('Data'));
+    fixture.detectChanges();
+    fixture.whenStable().then(() => {
+        expect(app.data).toBe('Data');
+    });
+}));
+
+# using "fakeAsync" and "tick"
+Since these tests are only theoretically asynchronous, we can use another method.
+We can use fakeAsync as a wrapper. (Which also needs to be imported from the testing package)
+Then we don't need the whenStable funciton. But we call tick() - which also needs to be imported - in between detect changes and the expect. tick means to finish all asynchronous tasks now.
+it('should fetch data successfully if called asynchronously', fakeAsync(() => {
+    let fixture = TestBed.createComponent(UserComponent);
+    let app = fixture.debugElement.componentInstance;
+    let dataService = fixture.debugElement.injector.get(DataService);
+    let spy = spyOn(dataService, 'getDetails')
+        .and.returnValue(Promise.resolve('Data'));
+    fixture.detectChanges();
+    tick();
+    expect(app.data).toBe('Data');
+}));
+
+# isolated vs non-insolated tests
+For some functionality, like a pipe that just reverses a string, or a service that just transforms some data, we don't need the Angular 2 testing package. Because we can test those kinds of things in isolation, we can write just a normal unit test.
+
+An isolated test for the reverse pipe:
+import { ReversePipe } from './reverse.pipe';
+
+describe('Component: User', () => {
+    it('should reverse the string', () => {
+        let reversePipe = new ReversePipe();
+        expect(reversePipe.transform('hello')).toEqual('olleh');
+    });
+});
+
+# resources
+Docs: https://angular.io/docs/ts/latest/guide/testing.html
