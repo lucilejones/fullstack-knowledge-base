@@ -309,3 +309,105 @@ We can use setValue() and pass in the same object to reset() in order to reset t
 Template-Driven forms might be the best choice for most use cases, but there is the other approach.
 
 # introduction to the Reactive Approach
+Allows us to configure a form in greater detail.
+The form is created programmatically in TS and synchronized with the DOM.
+
+# Reactive: Setup
+Because we're going to create the form programmatically, we should start in the TS file.
+We create a new property which will hold out form. Angular offers a lot of tools for creating a form.
+signupForm: FormGroup (the property is signupForm of type FormGroup, imported from @angular/forms)
+In Angular, a form is just a group of controls. And this is what a FormGroup holds.
+
+For the Reactive approach we don't need to import the FormsModule. Instead we need the ReactiveFormsModule.
+
+# Reactive: creating a form in code
+We're going to use a method and the OnInit lifecycle hook.
+
+Then in the ngOnInit we'll initialize our form.
+We should initialize it before rendering the template.
+We'll set up this.signupForm equal to a new FormGroup() and we need to pass a JS object.
+At that point we're theoretically done. This creates a form.
+The JS object configures it.
+We add controls - key/value pairs in the object passed to the overall FormGroup.
+We'll wrap the keys in quotes to make sure that during minification they don't get destroyed.
+Each key in the object is a new FormControl (imported from @angular/forms)
+Then to the FormControl constructor we pass a couple arguments: the first argument is the initial state, the initial value of this control. The second argument will be a single validator or an array of validators that we want to apply to this control. The third argument will be potential asynchronous validators.
+We'll start with just null to have an empty field.
+(We could pass a string to be a default that gets displayed.)
+
+    this.signupForm = new FormGroup({
+      'username': new FormControl(null),
+      'email': new FormControl(null),
+      'gender': new FormControl('female')
+    });
+
+# Reactive: syncing HTML and form
+We need to let Angular know which of our TS controls (in the TS code) relate to which inputs in the template.
+It does autodetect the form in the template and creates a form - in order to have it not create the form from the template we have to add some directives to overwrite the default behavior and give Angular some different instructions.
+
+On the form itself (in the template) we add the formGroup directive via property binding.
+This tells Angular to take our form group (the one we made) rather than inferring one. We pass our form as an argument to the directive. So we reference our signupForm, the property we created in the TS code which stores our form.
+<form [formGroup]="signupForm">
+Now the form in the template is synced with the form we created in TS, but we still need to tell Angular which controls should be connected to which inputs.
+For this we use another directive. On the input we use the formControlName directive to connect to the name of the control in our form. 
+(Since we're passing a string we don't need to use the square brackets.)
+          <label for="username">Username</label>
+          <input
+            type="text"
+            id="username"
+            formControlName="username"
+            class="form-control">
+
+# Submitting the form
+We still want to react to the default submit event which is fired by HTML, by JS. So we use ngSubmit just like with the TD approach.
+<form [formGroup]="signupForm" (ngSubmit)="onSubmit()">
+
+Then we add the onSubmit() method to the TS code.
+The difference from the template driven approach is that we don't need to get the form via the local reference (because we're not using Angular's autocreated mechanism). We also don't need the reference because we created the form on our own - we already have access to it in our TS code.  
+
+onSubmit() {
+  console.log(this.signupForm);
+}
+
+In the console we'll see the form group with the properties of the form and the correct value.
+
+# Reactive: adding validation
+We don't add it to the template because we're not configuring the form in the template, only synchronizing.
+We're configuring it in the TS code. 
+FormControl takes the additional argument of some validators. We can pass only one or an array. We add the Validators object (imported from @angular/forms), and we get several built-in validators we can use.
+'username': new FormControl(null, Validators.required),
+
+Here we don't want to call it (with parentheses) because we don't want to execute this method, we only want to pass the reference to this method. Angular will execute the method whenever it detects that the input of the FormControl changed.
+
+To the email control we'll pass an array of validators.
+      'email': new FormControl(null, [Validators.required, Validators.email]),
+
+# Reactive: getting access to controls
+We can use the form status to display messages.
+
+We create a span in the template:
+<span class="help-block">Please enter a valid username.</span>
+
+Instead of using a reference to the template input, we use *ngIf and the get() method on our overall signupForm.
+The get() method allows us to get access to our controls easily. We either specify the control name or the path to the control. (For now the path is the name because we only have one level of nesting in the form.)
+And then we check whether it is valid.
+          <span 
+            *ngIf="!signupForm.get('username').valid && signupForm.get('username').touched"
+            class="help-block">Please enter a valid username.</span>
+
+We can do the same for the email and the overall form (the form doesn't need the get method.)
+
+        <span 
+            *ngIf="!signupForm.valid && signupForm.touched"
+            class="help-block">Please enter valid data.</span>
+
+# Reactive: grouping controls
+get() also takes the path to an element
+For example, username and email might be in a form group.
+We can have FormGroups in FormGroups (we use it on the overall form, but also any nested group inside).
+The inner FormGroup also takes a JS object, and we can put the username and email in there.
+Then we need to reflect that in our template.
+We wrap that group in another div. And on that div we plave the formGroupName directive.
+
+We'll still get an error because get('username') and get('email') will now fail.
+We need to update the path that gets passed to userData.username
