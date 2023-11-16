@@ -411,3 +411,53 @@ We wrap that group in another div. And on that div we plave the formGroupName di
 
 We'll still get an error because get('username') and get('email') will now fail.
 We need to update the path that gets passed to userData.username
+
+# Reactive: Arrays of Form Controls (FormArray)
+In the video Max uses the following that will fail in newer versions of Angular:
+*ngFor="let hobbyControl of signupForm.get('hobbies').controls; let i = index"
+
+Instead, we can outsource the "get the controls" logic into a method of the component code (in the TS file):
+getControls() {
+  return (<FormArray>this.signupForm.get('hobbies')).controls;
+}
+Then in the template:
+*ngFor="let hobbyControl of getControls(); let i = index"
+
+Alternatively, we can set up a getter and use a little different syntax in the template:
+get controls() {
+  return (this.signupForm.get('hobbies') as FormArray).controls;
+}
+And in the template:
+*ngFor="let hobbyControl of controls; let i = index"
+
+This adjustment is required because of the way TS works and Angular parses the template.
+
+
+We add a new area to the form that allows the user to dynamically add form controls.
+        <div>
+          <h4>Your Hobbies</h4>
+          <button class="btn btn-default" type="button">Add Hobby</button>
+        </div>
+
+When the user clicks the button we want to add this control to an array of controls because there might be multiple hobbies. We'll add a click listener to the button.
+<button class="btn btn-default" type="button" (click)="onAddHobby">Add Hobby</button>
+
+We add the method in our TS code.
+onAddHobby() {}
+Then we need to also add the control in our form. So in the this.signForm we add a new control, 'hobbies', which should be an array. So instead of a new FormControl or new FormGroup, we use new FormArray (which needs to be imported).
+'hobbies': new FormArray([])
+A FormArray holds a list of controls, so we pass an array to initialize it.
+
+Then in the method we need to access our form and the hobbies array in the form. And we need to tell TS that this is of type FormArray. We tell TS that everything inside the parentheses is a FormArray so we can push a control onto the array. We'll store the new control in a constant and then push that. We'll create it at first with no default value (since the user is creating it). And we add a required validator.
+onAddHobby() {
+  const control = new FormControl(null, Validators.required);
+  (<FormArray>this.signupForm.get('hobbies')).push(control);
+}
+
+Then we need to synchronize with our HTML code.
+On that new div we created we'll add a directive formArrayName="hobbies"
+<div formArrayName="hobbies">
+
+Then we'll add an input to let the user add the hobby.
+
+
