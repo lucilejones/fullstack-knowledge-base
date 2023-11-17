@@ -144,3 +144,17 @@ describe('Component: User', () => {
 
 # resources
 Docs: https://angular.io/docs/ts/latest/guide/testing.html
+
+
+# notes from class
+manual testing vs automated testing
+there are a lot of different opinions on testing (theory, philosophy, etc)
+
+Kinds of automated test: end-to-end, integration, unit
+
+Angular has Jasmine built-in. Karma runs the tests.
+We can write the feature first and then the tests, or write the test first and then the feature.
+
+environments key - not actually secure
+even though it's not in the code, you'll be able to see it in the request (opening up devtools)
+typically we'll use an API that will hide that info, or like dotenv
