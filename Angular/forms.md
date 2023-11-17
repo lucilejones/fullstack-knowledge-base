@@ -457,7 +457,60 @@ onAddHobby() {
 Then we need to synchronize with our HTML code.
 On that new div we created we'll add a directive formArrayName="hobbies"
 <div formArrayName="hobbies">
+This tells Angular the array will live in this div.
 
 Then we'll add an input to let the user add the hobby.
+            <div class="form-group">
+              <input type="text">
+            </div>
 
+Now we need to loop through all the controls in the array. 
+On the form-group we'll add an *ngFor loop to loop through all the hobby controls, and we also want to extract the index of the current iteration. 
+*ngFor="let hobbyControl of signupForm.get('hobbies').controls; let i = index"
+[This needs to be updated with the code example above]
+
+Then on the input, we put formControlName=""
+This dynamically created input will have a name from the array - the index.
+So we bind [formControlName] and pass the local variable we create - i.
+            <div class="form-group"
+              *ngFor="let hobbyControl of getControls(); let i = index">
+              <input type="text" class="form-control" [formControlName]="i">
+            </div>
+
+# Reactive: creating custom validators
+In this example, maybe we have some usernames we don't want the user to be able to use.
+In the TS file we'll add a new property, forbiddenUsernames = ['Chris', 'Anna'];
+Then we create our own validator to check whether the username entered is one of the usernames in this array.
+
+A validator is just a function which gets exectued by Angular automatically when it checks the validity of the formControl and it'll check whenever it gets changed.
+
+In the TS file we'll make a new function, forbiddenNames. This will need to receive an argument which is the control it should check (control: formControl). A validator also needs to return something. This should be a JS object. It should have any key, which can be interpreted as a string, and the value should be a boolean.
+So the function should return something like this:
+{ nameIsForbidden: true }
+
+forbiddenNames(control: FormControl): {[s: string]: boolean} {}
+
+We want to check if the value of the control is part of the forbiddenNames array.
+  forbiddenNames(control: FormControl): {[s: string]: boolean} {
+    if (this.forbiddenUsernames.indexOf(control.value)) {
+      return {'nameIsForbidden': true};
+    }
+    return null;
+  }
+
+If there is the control value present in the forbidden names array (it does have an index), then we return the JS object.
+Otherwise we return null. If validation is successful we have to pass nothing or null.
+We shouldn't pass the object with false.
+
+Then in the form (in the TS file), we'll change the validator to an array of validators and add our created one.
+'username': new FormControl(null, [Validators.required, this.forbiddenNames]),
+
+If we save this, we'll actually get an error. It has to do with the way JS handles 'this'.
+But we're not calling forbiddenNames from within this class. Angular will call it when it checks the validity, and at that point of time 'this' will not refer to our class. To fix it, we'll bind 'this'
+this.forbiddenNames.bind(this)
+
+We also need to check if the control is not equal to minus 1 (it will be equal to minus one of the control is not in the array.)
+    if (this.forbiddenUsernames.indexOf(control.value) !== -1) 
+
+If it's not equal to -1 that means we did find it.
 
