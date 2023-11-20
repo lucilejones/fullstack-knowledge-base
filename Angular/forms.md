@@ -514,3 +514,22 @@ We also need to check if the control is not equal to minus 1 (it will be equal t
 
 If it's not equal to -1 that means we did find it.
 
+
+# using error codes
+Angular adds the error codes on the individual controls, on the errors object.
+We can use this to fine-tune our error message.
+We can wrap another span in our helpblock and check if the forbidden username error is present.
+            <span 
+              *ngIf="!signupForm.get('userData.username').valid && signupForm.get('userData.username').touched"
+              class="help-block">
+              <span *ngIf="signupForm.get('userData.username').errors['nameIsForbidden']">
+                This name is invalid.
+              </span>
+              <span *ngIf="signupForm.get('userData.username').errors['required']">
+                This field is required.
+              </span>
+            </span>
+
+We can have more complex setups with TS objects in the TS code where we map error codes to specific messages and dynamically output those.
+
+# Creating a custom async validator
