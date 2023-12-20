@@ -80,3 +80,6 @@ the public directory needs to be dist/project-name
 
 run a build script before every deploy? y
 the script that should be run is npm run build
+
+# from Nolan 11/20:
+usually we deploy right when we create a new app. setup the github, redeploy, all that stuff and start hosting. Then we can make sure everything works before we create any code.

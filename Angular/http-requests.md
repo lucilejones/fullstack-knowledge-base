@@ -19,7 +19,7 @@ Other reasons to interact with a server: file upload, analytics, etc.
 - Body - core data that is attached to a request; example: { title: "new post"}
 
 # backend (Firebase) setup
-Firebase is a whole backend solution (not just a database - more than an alternative to MondoDB)
+Firebase is a whole backend solution (not just a database - more than an alternative to MongoDB)
 - Go to the Firebase website
 - Login with Google account - choose the free plan
 - Go to the console and click on Add Project / Create Project

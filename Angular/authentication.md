@@ -658,3 +658,61 @@ Or we add a second argument to the get method which is an object where we can se
 }
 
 If the token is invalid, the request will fail. Later we'll add code to automatically logout a user when a token has expired.
+
+# Attaching the token with an interceptor
+We'll create an auth-interceptor.service.ts file in the auth folder.
+We need to import Injectable, but we don't provideIn root because we're going to provide it in the module.
+We will implement the HTTPInterceptor interface, so we need to import that from @angular/common/http. That forces us to add the intercept method.
+export class AuthInterceptorService implements HttpInterceptor {
+    intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+        
+    }
+}
+It needs to get two arguments: the request, the HttpRequest, which is of generic type any; and next, which is our HttpHandler. These types need to be imported. 
+Then we'll need to return next.handle(req)
+
+But we want to edit the request and add the token.
+So we add the constructor and inject the authService.
+
+Then we reach out the auth service and the user, which is a subject and therefore an observable, and we can subscribe to it. 
+We'll need to use the same code as before with the .pipe(take(1), exhaustMap())
+We also need to import the operators from rxjs.
+Then in that function we return next.handle(req); and we can edit the request based on the user.
+Then we'll return the overall chain which will have the handle observable being returned. 
+
+We have to clone the request and update it. 
+export class AuthInterceptorService implements HttpInterceptor {
+constructor(private authService: AuthService) {}
+
+    intercept(req: HttpRequest<any>, next: HttpHandler) {
+        return this.authService.user.pipe(
+            take(1),
+            exhaustMap(user => {
+                const modifiedReq = req.clone({
+                    params: new HttpParams().set('auth', user.token)
+                });
+                return next.handle(modifiedReq);
+            })
+        );
+    }
+}
+
+We have to add this in the app module. In the providers array we add an object with the provide keyword and HTTP_INTERCEPTORS which is imported from angular/common/http.
+Then useClass: AuthInterceptorService (which needs to be imported). And we set multi to true. 
+  providers: [{
+    provide: HTTP_INTERCEPTORS,
+    useClass: AuthInterceptorService,
+    multi: true
+  }],
+
+Then in the data storage service (in the fetchRecipes function), we don't add the params, but we do use .pipe() to add the map and tap.
+
+The way it's written now it'll also try to use the interceptor for the signup and login requests - it'll intercept all requests.
+It will fail because before a user is logged in, the user subject is null and we aren't able to access the token on user.token if user is null.
+We can add a check. If we don't have a user, we just return next.handle(req) and we don't try to modify it.
+if (!user) {
+    return next.handle(req);
+}
+
+We only add the token if we have a user.
+Alternatively we can check the url of the request and only add the token for certain urls. 
