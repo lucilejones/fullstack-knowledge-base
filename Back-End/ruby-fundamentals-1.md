@@ -207,3 +207,49 @@ end
 These are used to check if a value falls within a certain range. In this example, the first when condition checks if the age is between 0 and 12, the second when condition checks if the age is between 13 and 18. The else block is executed if none of the conditions are true. We can have as many when conditions as we need. 
 
 # Loops
+while loop: repeats a block of code as long as a specified condition is true; the condition is evaluated before each iteration, and if it's false the loop is terminated. The 'end' keyword marks the end of the loop or block.
+
+while condition
+    # code to execute
+end
+
+i = 0
+while i < 5
+  puts i
+  i += 1
+end # Output: 0 1 2 3 4
+
+until loop: repeats a block of code as long as a specified condtion is false
+
+until condition
+    # code to execute
+end
+
+i = 0
+until i >= 5
+  puts i
+  i += 1
+end # Output: 0 1 2 3 4
+
+for loop: repeats a block of code for a specified number of times
+
+for variable in range
+    # code to execute
+end
+
+for i in 0..4
+  puts i
+end # Output: 0 1 2 3 4
+
+each loop: repeats a block of code for each element in a collection
+
+collection.each do |variable|
+    # code to execute
+end
+
+[1, 2, 3, 4, 5].each do |i|
+  puts i
+end # Output: 1 2 3 4 5
+
+
+
