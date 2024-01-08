@@ -36,8 +36,8 @@ Escape sequences are special characters that are preceded by a backslash (\).
 Example: 
 name = "Ruby"
 puts "Hello, #{name}!\nWelcome to programming!"
-# Output: Hello, Ruby!
-#         Welcome to programming!
+Output # Hello, Ruby!
+         Welcome to programming!
 
 # Numbers
 In Ruby, numbers fall into two categories: integers and floating-point numbers
@@ -152,7 +152,7 @@ In Ruby, these are created using if, if/else, if/elsif/else, and case statements
 if statement: the most basic; runs the code block only if the condition is true
 
 if condition
-  # code to exectue if condition is true
+  comment # code to exectue if condition is true
 end
 
 temperature = 30
