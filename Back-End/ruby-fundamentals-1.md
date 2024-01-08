@@ -404,6 +404,10 @@ Testing ensures correctness, facilitates refactoring, acts as documentation, imp
 
 # notes from class
 
+Ruby is to Rails what JS is to Angular
+Ruby is the language and Rails is the framework
+
+
 numbers = [1, 2, 3, 4, 5, -1, -2, -3, -4, -5, 0, 0, 0, 0, 0]
 
 sum = 0
@@ -453,7 +457,6 @@ Then we can create a file app_spec.rb
 
 In that file (the test file):
 
-require 'rspec'
 require_relative '../app'
 
 describe '#count_characters_from_each_word' do
@@ -461,6 +464,14 @@ describe '#count_characters_from_each_word' do
     expect(count_characters_from_each_word('Hello world')).to eql?({"Hello"=>5, "world"=>5})
   end
 end
+
+
+
+to run all the tests:
+rspec
+
+to run one file at a time:
+rspec spec/exercise_1_spec.rb
 
 
 After forking the Repl from German's link:
