@@ -251,5 +251,123 @@ end
   puts i
 end # Output: 1 2 3 4 5
 
+# Built-in methods in Ruby
+puts and print : print data to the terminal
+puts "Hello, world!"
+print "Hello, world!"
+
+String methods
+
+length : returns the length
+"Hello, world!".length  # => 13
+strip : returns a copy of the string with leading and trailing white space removed
+" Hello, world! ".strip  # => "Hello, world!"
+split : splits the string into a array of substrings based ona delimiter (like a space or comma)
+"Hello, world!".split(",")  # => ["Hello", " world!"]
+start_with? : checks if the string starts with a specified substring
+"Hello, world!".start_with?("Hello")  # => true
+end_with? : checks if the string ends with a specified substring
+"Hello, world!".end_with?("world!")  # => true
+include? : checks if the string contains a specified substring
+"Hello, world!".include?("world")  # => true
+upcase : returns a copy with all lowercase letters replaced with uppercase
+"Hello, world!".upcase  # => "HELLO, WORLD!"
+downcase : returns a copy with all uppercase letters replaces with lowercase
+"Hello, world!".downcase  # => "hello, world!"
+capitalize : returns a copy with the first character converted to uppercase and the remaining to lowercase
+"hello, world!".capitalize  # => "Hello, world!"
+gsub : returns a copy with all occurences of a pattern replaces with another string
+"Hello, world!".gsub("world", "Ruby")  # => "Hello, Ruby!"
+to_i : converts the string to an integer
+"10".to_i  # => 10
+to_f : converts the string to a floating-point number
+"10.5".to_f  # => 10.5
+
+Number methods
+
+abs : returns the absolute value of a number
+-10.abs  # => 10
+round : rounds a floating-point number to the nearest integer
+10.5.round  # => 11
+floor : returns the largest integer less than or equal to a number
+10.5.floor  # => 10
+ceil : returns the smallest interger greater than or equal to a number
+10.5.ceil  # => 11
+
+Array methods
+
+length : returns the length of the array
+[1, 2, 3, 4, 5].length  # => 5
+push : adds an element to the end of the array
+[1, 2, 3, 4, 5].push(6)  # => [1, 2, 3, 4, 5, 6]
+pop : removes the last element of the array
+[1, 2, 3, 4, 5].pop  # => [1, 2, 3, 4]
+first : returns the first element of the array
+[1, 2, 3, 4, 5].first  # => 1
+last : returns the last element of the array
+[1, 2, 3, 4, 5].last  # => 5
+join : joins all elements of the array into a string
+[1, 2, 3, 4, 5].join  # => "12345"
+index : returns the index of the first element equal to a specified value
+[1, 2, 3, 4, 5].index(3)  # => 2
+reverse : returns a new array with the elements in reverse order
+[1, 2, 3, 4, 5].reverse  # => [5, 4, 3, 2, 1]
+sort : returns a new array with the elements sorted
+[5, 3, 1, 2, 4].sort  # => [1, 2, 3, 4, 5]
+include? : checks if the array contains a specified element
+[1, 2, 3, 4, 5].include?(3)  # => true
+
+Array methods with blocks
+Blocks are used to group statements together and pass them to methods as arguments. Blocks are enclosed in curly braces or do/end keywords.
+[1, 2, 3, 4, 5].each do |i|
+  puts i
+end # output: 1 2 3 4 5
+
+The each method iterates over each element and executes the code block for each. 
+i represents the current element of the array.
+
+Hash methods
+
+length : returns the number of key-value pairs in the hash
+{ "name" => "Alice", "age" => 30 }.length  # => 2
+has_key? : checks if the hash contains a specified key
+{ "name" => "Alice", "age" => 30 }.has_key?("name")  # => true
+has_value? : checks if the hash contains a specified value
+{ "name" => "Alice", "age" => 30 }.has_value?(30)  # => true
+keys : returns a new array with all the keys of the hash
+{ "name" => "Alice", "age" => 30 }.keys  # => ["name", "age"]
+values : returns a new array with all the values of the hash
+{ "name" => "Alice", "age" => 30 }.values  # => ["Alice", 30]
+empty? : checks if the hash is empty
+{ "name" => "Alice", "age" => 30 }.empty?  # => false
 
 
+# Basic Methods
+Methods group statements together and give them a name, allowing them to be called multiple times throughout a program.
+Methods are a set of instructions that can be called on an object; reusable blocks of code that perform a specific task.
+
+def say_hello
+  puts "Hello, world!"
+end
+
+The def keyword is used to define a method. The code block is executed when the method is called.
+
+Methods are called using the method name followed by parentheses; if the method takes arguments, they are passed inside the parentheses.
+say_hello() # => Hello, world!
+
+def say_hello(name)
+  puts "Hello, #{name}!"
+end
+
+say_hello("Alice") # => Hello, Alice!
+
+Methods can return values to the called using the return keyword. The return value is the result of the method's execution. If a return keyword is not used, the method will return the last evaluated expression.
+
+def add(a, b)
+  return a + b
+end
+
+add(1, 2) # => 3
+
+
+# Testing with RSpec
