@@ -8,6 +8,18 @@ Create a new Replit by clicking on "Create repl"
 Choose Ruby as the template
 Click the "Run" button to run code
 
+Ruby files have the extension .rb
+(main.rb, app.rb)
+
+to run the file (in the terminal, or in the shell in Replit):
+ruby file_name
+ex. ruby main.rb
+
+for future: user input will always be strings, so we need to convert user input to integers, floats, etc
+
+Ruby uses snake_case
+
+
 # Comments
 In Ruby, comments are created with the # symbol
 
@@ -140,7 +152,7 @@ In Ruby, these are created using if, if/else, if/elsif/else, and case statements
 if statement: the most basic; runs the code block only if the condition is true
 
 if condition
- # code to exectue if condition is true
+  # code to exectue if condition is true
 end
 
 temperature = 30
@@ -209,6 +221,8 @@ These are used to check if a value falls within a certain range. In this example
 # Loops
 while loop: repeats a block of code as long as a specified condition is true; the condition is evaluated before each iteration, and if it's false the loop is terminated. The 'end' keyword marks the end of the loop or block.
 
+i++ is not part of the syntax in Ruby
+
 while condition
     # code to execute
 end
@@ -251,8 +265,12 @@ end
   puts i
 end # Output: 1 2 3 4 5
 
+[1, 2, 3, 4, 5].each do |num|
+  puts num
+end
+
 # Built-in methods in Ruby
-puts and print : print data to the terminal
+puts and print : print data to the terminal (puts creates a new line, print doesn't)
 puts "Hello, world!"
 print "Hello, world!"
 
@@ -282,6 +300,13 @@ to_i : converts the string to an integer
 "10".to_i  # => 10
 to_f : converts the string to a floating-point number
 "10.5".to_f  # => 10.5
+
+concatinating strings
+str1 << str2
+str1.concat(str2)
+
+(Using the shovel operator << - can also push onto an array)
+
 
 Number methods
 
@@ -371,3 +396,85 @@ add(1, 2) # => 3
 
 
 # Testing with RSpec
+Testing ensures correctness, facilitates refactoring, acts as documentation, improves design, saves time, improves collaboration, boosts confidence
+
+
+
+
+
+# notes from class
+
+numbers = [1, 2, 3, 4, 5, -1, -2, -3, -4, -5, 0, 0, 0, 0, 0]
+
+sum = 0
+positive_count = 0
+negative_count = 0
+zero_count = 0
+
+numbers.each do |num|
+  sum += num
+
+  if num > 0
+    positive_count += 1
+  elsif num < 0
+    negative_count += 1
+  else
+    zero_count += 1
+
+  puts "Sum: #{sum}"
+end
+
+
+def count_characters_from_each_word(str)
+  words = str.split(' ')
+  result = {}
+  words.each do |word|
+    result[word] = word.length
+  end
+  return result
+end
+
+puts count_characters_from_each_word("Hello world!")
+
+
+
+# gem file
+similar to a package file
+Gemfile is similar to packge.json
+
+Inside the Gemfile:
+gem "rspec"
+
+bundle install 
+This will install dependencies listed in the Gemfile
+
+Installing rspec with create a spec folder
+Then we can create a file app_spec.rb
+
+In that file (the test file):
+
+require 'rspec'
+require_relative '../app'
+
+describe '#count_characters_from_each_word' do
+  it 'returns a hash with the count of characters from each word' do
+    expect(count_characters_from_each_word('Hello world')).to eql?({"Hello"=>5, "world"=>5})
+  end
+end
+
+
+After forking the Repl from German's link:
+in the shell, run bundle install
+
+
+# How to put Repls on GitHub
+Under Tools:
+Git
+Click on initialize repository
+Add a remote repository in the settings
+Connect to GitHub
+Login
+only select repositories (or all repositories)
+
+Create a new repo on GitHub
+Then run the commands to connect the Repl to the repo
