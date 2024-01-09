@@ -211,3 +211,115 @@ Protected: can only be accessed by the class that defines them and its subclasse
 
 
 # Getters and Setters
+Getters and setters are methods that are used to get and set the value of instance variables. 
+class Book
+  def initialize(title, author, pages)
+    @title = title
+    @author = author
+    @pages = pages
+  end
+
+  def title
+    @title
+  end
+
+  def title=(title)
+    @title = title
+  end
+
+  def author
+    @author
+  end
+
+  def author=(author)
+    @author = author
+  end
+
+  def pages
+    @pages
+  end
+
+  def pages=(pages)
+    @pages = pages
+  end
+end
+
+book = Book.new("The Pragmatic Programmer", "Andy Hunt and Dave Thomas", 352)
+
+puts book.title # => The Pragmatic Programmer
+
+puts book.author # => Andy Hunt and Dave Thomas
+
+puts book.pages # => 352
+
+book.title = "The Pragmatic Programmer 2"
+
+puts book.title # => The Pragmatic Programmer 2
+
+
+# Accessing modifiers with attr_accessor
+These are like a shortcut to writing out the getter and setter methods in the class.
+
+The attr_accessor method is used to define both reader and writer methods
+The attr_reader creates only the reader.
+The attr_writer creates only the writer.
+
+class Book
+  attr_accessor :title, :author, :pages
+
+  def initialize(title, author, pages)
+    @title = title
+    @author = author
+    @pages = pages
+  end
+end
+
+book = Book.new("The Pragmatic Programmer", "Andy Hunt and Dave Thomas", 352)
+
+puts book.title # => The Pragmatic Programmer
+
+puts book.author # => Andy Hunt and Dave Thomas
+
+puts book.pages # => 352
+
+book.title = "The Pragmatic Programmer 2"
+
+puts book.title # => The Pragmatic Programmer 2
+
+
+# Example RSpec test for the Book class
+require 'rspec'
+
+require_relative '../book'
+
+describe Book do
+  describe '#title' do
+    it 'returns the title of the book' do
+      book = Book.new("The Pragmatic Programmer", "Andy Hunt and Dave Thomas", 352)
+
+      expect(book.title).to eq("The Pragmatic Programmer")
+    end
+  end
+
+  describe '#author' do
+    it 'returns the author of the book' do
+      book = Book.new("The Pragmatic Programmer", "Andy Hunt and Dave Thomas", 352)
+
+      expect(book.author).to eq("Andy Hunt and Dave Thomas")
+    end
+  end
+
+  describe '#pages' do
+    it 'returns the number of pages in the book' do
+      book = Book.new("The Pragmatic Programmer", "Andy Hunt and Dave Thomas", 352)
+
+      expect(book.pages).to eq(352)
+    end
+  end
+end
+
+
+# Modules and Mixins
+Modules are used to group related methods, classes, and constants together. They are great for organizing code and for sharing code between classes.
+
+We can include or extend a module in a class.
