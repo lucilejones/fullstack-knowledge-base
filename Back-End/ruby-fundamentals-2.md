@@ -322,4 +322,91 @@ end
 # Modules and Mixins
 Modules are used to group related methods, classes, and constants together. They are great for organizing code and for sharing code between classes.
 
+Example of a module:
+module Math
+  def self.square(x)
+    x * x
+  end
+end
+
+puts Math.square(2) # => 4
+
 We can include or extend a module in a class.
+
+If we include the module:
+class Book
+    include Math
+...
+
+Then we can use the square method from the module like this:
+puts book.square(2) # => 4
+
+If we extend the module:
+class Book
+    extend Math
+...
+
+Then we can use the square method on the Book class:
+puts Book.square(2) # => 4
+
+
+# Class methods and class variables
+Class methods are methods that are defined in a class and can be called on the class itself. 
+Class variables are variables that are defined in a class and can be accessed by all the class methods in the class. We use the @@ symbol to define class variables.
+
+Examples:
+class Book
+  @@count = 0
+
+  def initialize(title, author, pages)
+    @title = title
+    @author = author
+    @pages = pages
+
+    @@count += 1
+  end
+
+  def self.count
+    @@count
+  end
+end
+
+book1 = Book.new("The Pragmatic Programmer", "Andy Hunt and Dave Thomas", 352)
+
+book2 = Book.new("The Pragmatic Programmer 2", "Andy Hunt and Dave Thomas", 352)
+
+puts Book.count # => 2
+
+
+The self keyword in class methods refers to the class itself.
+
+example:
+class User
+
+  def self.say_hello
+    puts "Hello"
+  end
+end
+
+User.say_hello # => Hello
+
+The self keyword in instance methods refers to teh instance of the class that the method is called on.
+example:
+class User
+  def initialize(name)
+    @name = name
+  end
+
+  def say_hello
+    puts "Hello, my name is #{self.name}"
+  end
+
+  def name
+    @name
+  end
+end
+
+user = User.new("Alice")
+
+user.say_hello # => Hello, my name is Alice
+
