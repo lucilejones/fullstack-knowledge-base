@@ -410,3 +410,66 @@ user = User.new("Alice")
 
 user.say_hello # => Hello, my name is Alice
 
+
+# Video: Basic Ruby - Debugging
+Errors will tell us the lines of the errors, an error message, and will sometimes give suggestions.
+
+
+# Video: Basic Ruby - Classes
+A class is essentially a template.
+
+class Party
+  @@attendee_count = 0
+  @@attendee_list = []
+
+  def add_attendee(name)
+    @@attendee_count += 1
+    @@attendee_list.push(name)
+  end
+
+  def print_attendees
+    puts "Total Attendee Count: #{@@attendee_count}"
+    puts "Attendee Names:"
+    @@attendee_list.each {|attendee| puts attendee}
+  end
+end
+
+party_1 = Party.new()
+party_1.add_attendee("Luci")
+part_1.print_attendees
+
+party_2 = Party.new
+party_2.print_attendees # => This will output the same list of attendees as party_1 because we're using class variables. 
+A class variable is a variable on every instance of a class.
+If we want the variables to be unique to each instance of the class, we instead need to use instance variables. An instance variable will be specific to the one instance of a class that it's attached to. (We just use one @ symbol for instance variables.)
+
+We use initialize which is similar to a constructor.
+
+class Party
+  def initialize
+    @attendee_count = 0
+    @attendee_list = []
+  end
+
+  def add_attendee(name)
+    @attendee_count += 1
+    @attendee_list.push(name)
+  end
+
+  def print_attendees
+    puts "Total Attendee Count: #{@attendee_count}"
+    puts "Attendee Names:"
+    @attendee_list.each {|attendee| puts attendee}
+  end
+end
+
+Then printing the list for party_1 and party_2 should result in different lists. (Once we've added names to the list array.)
+
+We can use the attr_accessor to access the values of the varibles we create.
+
+class Party
+  attr_accessor "attendee_count, :attendee_list
+
+...
+
+puts party_1.attendee_count # => the count number
