@@ -394,6 +394,92 @@ end
 
 add(1, 2) # => 3
 
+# Video: Basic Ruby - Methods
+Reserved words in Ruby: end, while, for, etc (List on Odin Project)
+Can use !, =, ? only as the last charater of a method name.
+Numbers can also be used in method names, but not as the first character.
+Don't need parentheses to call methods in Ruby (if not passing arguments).
+
+Default parameters:
+def area_of_a_rectangle(width = 2, height = 4)
+  width * height
+end
+
+Ruby has an implicit return. Whatever the last line is in the method, it will return that. 
+In an if/else, it will return the result of the condition check.
+
+Predicate method:
+Built-in methods with a question mark at the end. Will return true or false.
+Examples: 
+puts 4.odd?
+
+puts 15.between?(10, 20)
+
+If we're writing our own predicate methods we should also use a question mark to stay with this convention.
+
+Bang method:
+Adding an exclamation point onto the end of the method name will perform the action on the variable or data (rather than just making a copy).
+
+string = 'HELLO! HOW ARE YOU?'
+
+puts string.downcase # => hello! how are you?
+puts string # => HELLO! HOW ARE YOU?
+
+puts string.downcase! # => hello! how are you?
+puts string # => hello! how are you?
+
+
+# Video: Basic Ruby - Enumerable Methods
+Each Method
+Will iterate through an array and will yield each element to a code block where a task can be performed on/with that element.
+
+attendees = ['Ruby', 'Sarah', 'Arnold', 'Lee', 'Nolan', 'Odin']
+
+attendess.each { |attendee| puts "Hello, " + attendee}
+(Sometimes won't be able to write the code block on one line, so an expanded method is below)
+
+
+Each With Index Method
+Allows us to have two references (we can also use the index)
+
+attendees.each_with_index do |attendee, index|
+  puts "Team 1: " + attendee if index.odd?
+  puts "Team 2: " + attendee if index.even?
+end
+
+
+Map Method (also called 'collect')
+Transforms each element from an array according to the block we pass to it and returns the transformed elements in a new array.
+
+puts attendees.map { |attendee| attendee.upcase} # => a new array with all uppercase
+puts attendees # => will puts out the original array
+
+
+If we want the new array stored somewhere we'd need to store it in a variable.
+updated_list = attendees.map { |attendee| attendee.upcase}
+puts updated_list # => will puts the new array
+puts attendees # => will puts the original array
+
+If we want to change the original array, we can add the exclamation point to turn it into a bang method:
+puts attendees.map! { |attendee| attendee.upcase}
+
+
+Select Method (also called 'filter')
+Passes ever item in an array to a block and returns a new array with only the items for which the condition we set in the block evaluated to true.
+
+puts attendees.select { |attendee| attendee != 'Lee'} # => puts out all other attendees
+
+
+Reduce Method (also called 'inject')
+Reduces an array or hash down to a single object, outputs a single value.
+
+Example: sum of an array
+some_numbers = [1, 2, 3, 4, 5]
+
+puts some_numbers.reduce { |sum, number| sum + number} # => 15
+
+The 'sum' variable is the accumulator - the result of each iteration is stored in the accumulator. 
+
 
 # Testing with RSpec
 Testing ensures correctness, facilitates refactoring, acts as documentation, improves design, saves time, improves collaboration, boosts confidence
