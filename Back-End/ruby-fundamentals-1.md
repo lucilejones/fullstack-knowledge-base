@@ -396,6 +396,7 @@ add(1, 2) # => 3
 
 # Video: Basic Ruby - Methods
 Reserved words in Ruby: end, while, for, etc (List on Odin Project)
+https://docs.ruby-lang.org/en/2.2.0/keywords_rdoc.html
 Can use !, =, ? only as the last charater of a method name.
 Numbers can also be used in method names, but not as the first character.
 Don't need parentheses to call methods in Ruby (if not passing arguments).

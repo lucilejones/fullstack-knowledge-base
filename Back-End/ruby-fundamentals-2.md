@@ -146,6 +146,38 @@ cat = Cat.new
 
 speak(cat) # => I am a cat
 
+Example from Code Coach Joe:
+class Toy
+  def play
+    raise NotImplementedError, 'Each toy must implement the play method'
+  end
+end
+
+class Car < Toy
+  def play
+    'Vroom, vroom!'
+  end
+end
+
+class Doll < Toy
+  def play
+    'Let\'s have a tea party.'
+  end
+end
+
+class ActionFigure < Toy
+  def play
+    'To the rescue!'
+  end
+end
+
+toys = [Car.new, Doll.new, ActionFigure.new]
+toys.each do |toy|
+  puts toy.play
+end
+
+In this code, each type of toy is a subclass of Toy and implements the play method. When we iterate over the array of toys and call play on each one, the correct method is called for each type of toy. This is polymorphism.
+
 
 # Encapsulation and Access Modifiers
 Encapsulation is the process of hiding the internal details of an object. Then the internal details of an object can only be accessed through a well-defined interface.
