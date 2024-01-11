@@ -581,7 +581,7 @@ class Person
     @age = age
   end
 
-    def set_name(name)
+  def set_name(name)
     @name = name
   end
 
@@ -605,7 +605,7 @@ class Person
 end
 
 class Student < Person
-  attr_accesspr :grade
+  attr_accessor :grade
 
   def initialize(name, age, grade)
     super(name, age)
