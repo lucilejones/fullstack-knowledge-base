@@ -489,7 +489,7 @@ Testing ensures correctness, facilitates refactoring, acts as documentation, imp
 
 
 
-# notes from class
+# notes from class 1/8/2024
 
 Ruby is to Rails what JS is to Angular
 Ruby is the language and Rails is the framework

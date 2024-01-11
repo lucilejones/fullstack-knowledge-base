@@ -505,3 +505,180 @@ class Party
 ...
 
 puts party_1.attendee_count # => the count number
+
+
+
+
+# Notes from class 1/11/2024
+
+For testing, we need to install rspec
+In the Gemfile, we do a method call:
+gem 'rspec'
+Then in the shell we run 
+bundle install
+Then
+gem install rspec
+(To be able to use the rspec CLI, etc)
+Then we need to run
+bundle exec rspec --init
+(This will make sure we're running the version in our local project)
+It will create the directory called spec and a file spec_helper.rb
+When we create test files we need to put them in the spec directory.
+Files need to have _spec at the end of the file name to be interpreted as a test file.
+Example:
+student_spec.rb
+
+In the test file we describe what it is we're testing.
+We use the describe method.
+
+We want to test a method greet that returns a greeting.
+We have a studen based on a class with name, age, and grade level.
+
+require_relative "../main"
+
+describe Student do
+  describe "#greet" do
+    it "returns a greeting" do
+      student = Student.new("Alice", 25, 12)
+      expect (stuent.greet).to eq("Hellow, my name is Alice and I am in grade 12. I am an adult.")
+    end
+  end
+
+  describe "#compare_age_with" do
+    it "returns a comparison of ages" do
+      student1 = Student.new("Alice", 25, 12)
+      student2 = Student.new("Bob", 20, 12)
+
+      expect(student1.compare_age_with(student2)).to eq("Alice is older than Bob")
+    end
+  end
+
+end
+
+
+In the main.rb file we can set up the class.
+(German also demonstrating inheritance from a super class.)
+
+
+class Person
+  def initialize(name, age)
+  comment # by default these are private attributes/properties
+    @name = name
+    @age = age
+  end
+
+  comment # public instance methods / these are getters
+  def name
+    @name
+  end
+
+  def age
+    @age
+  end
+
+  comment # these are setters
+  def set_age(age)
+    @age = age
+  end
+
+    def set_name(name)
+    @name = name
+  end
+
+  def greet
+    "Hello, my name is #{@name}"
+  end
+
+  private
+  def calculate_life_stage
+    case @age
+      when 0..12 then "child"
+      when 13..19 then "teenager"
+      else "adult"
+    end
+  end
+
+  def older_than?(other)
+    @age > other.age
+  end
+
+end
+
+class Student < Person
+  attr_accesspr :grade
+
+  def initialize(name, age, grade)
+    super(name, age)
+    @grade = grade
+  end
+
+  def greet
+    "Hello, my name is #{@name} and I am in grade #{@grade}. I am an #{calculate_life_stage}."
+  end
+
+  def compare_age_with(other_student)
+    if odler_than?(other_stuent)
+      "#{name} is older than #{other_student.name}"
+    else
+      "#{name} is not older than #{other_student.name}"
+    end
+  end
+end
+
+
+person = Person.new("Luci", 22)
+(Each instance will be given an id internally)
+
+student = Student.new("Brandon", 6, 1)
+
+
+Instead of writing code for the getters and setters, we can use the shorthard with attr_accessor
+attr_accessor :name, :age
+
+We can use super to essentially copy the code from the parent/super class into the initialize method in the child class
+
+
+
+Ruby has a similar functionality to the "this" keyword in JavaScript
+
+A class method is written:
+
+def self.print_each_car
+  puts "Printing each car..."
+  puts self
+end
+
+It cannot be called by an instance of the class, but only by the class.
+
+Car.print_each_car
+
+An instance method:
+def print_details
+  puts "Printing details..."
+  puts self
+end
+
+The puts self will print to the console the instance id.
+
+Instead was can use self.color to puts the color of the specific instance (referring to itself).
+
+puts self in the class method will puts the class name Car; it's referring to the Car class.
+
+Class methods can operate on a large scale and keep track of the instances themselves. 
+For example, we can define a variable @@cars = []
+Then in the initialize method we can add @@cars << self
+
+def initialize(color)
+  @color = color
+  @@cars << self
+end
+
+The initialize method runs when .new is called creating a new instance of the class.
+
+
+def self.print_each_car
+  puts "Printing each car's color..."
+  @@cars.each do |car|
+    puts car.color
+  end
+end
