@@ -101,3 +101,206 @@ In a practical sense, we're more likely to get data from a website using an API 
 
 
 # Countries of the World CLI
+
+
+
+
+
+# video: USA COVID-19 CLI - Setup
+url: worldometers.info/coronavirus/country/us/
+
+Make a directory called lib
+Then we have a file called cli.rb
+In that file we define a class with methods
+
+class CLI
+  def run
+    greeting
+    while menu != 'exit'
+    end
+    end_program
+  end
+
+  def greeting
+    puts "Welcome to the USA Covid 19 Tracker"
+  end
+
+  def end_program
+    puts "Thank you for using the USA Covid 19 Tracker"
+  end
+
+  def menu
+    list_options
+    input = gets.chomp.downcase
+    choose_option(input)
+    input
+  end
+
+  def list_options
+    puts "Please select an option:"
+    puts "1. List all states"
+    puts "2. List top ten states with the most confirmed covid cases"
+    puts "3. Print USA information"
+    puts "Exit the program by entering 'exit'"
+  end
+
+  def choose_option(option)
+    case option
+    when "1"
+      puts "Listing all states..."
+    
+    when "2"
+      puts "Listing top ten states with the most confirmed covid cases..."
+    end
+
+    when "3"
+      puts "Printing USA information..."
+    end
+  end
+
+end
+
+In order to access these methods in our program, we need to require the cli.rb file in our main.rb file, then we'll create an instance of the class and call the run method:
+
+require_relative "./lib/cli.rb"
+
+CLI.new.run
+
+Then we define our other methods and add an input to the menu method.
+Then we call choose_option and take the input.
+
+If we want to show the list of options until a user enters 'exit' we can return the input in the menu method and then put a while loop in the run method.
+while menu != 'exit'
+
+
+# video: USA Covid-19 CLI - Web Scraping USA Info
+We create a file called scraper.rb (in the lib directory) with a module Scraper
+
+module Scraper
+  URL = "https://www.worldometers.info/coronavirus/country/us/"
+
+  def self.extract_usa_data (doc)
+    country_main = doc.css('.maincounter-number')
+    usa_confirmed_cases = country_main[0].text.strip
+    usa_deaths = country_main[1].text.strip
+    usa_recovered = country_main[2].text.strip
+
+    Country.new("USA", usa_confirmed_cases, usa_deaths, usa_recovered)
+  end
+
+  def self.extract_states_data
+
+  end
+
+  def self.scrape_data
+    puts "Scraping data..."
+    unparsed_page = URI.open(URL)
+    doc = Nokogiri::HTML(unpared_page)
+    extract_usa_data(doc)
+  end
+
+end
+
+In order to do the web scraping, we need to add to our Gemfile:
+
+gem 'nokogiri'
+gem 'open-uri'
+
+(open-uri is similar to httparty)
+
+Then in the shell we run bundle install
+
+In the scraper.rb file:
+require 'nokogiri'
+require 'open-uri'
+
+Then we'll grab the url and set a constant property in the module:
+URL = "https://www.worldometers.info/coronavirus/country/us/"
+
+And we'll add sending a request in the self.scrape_data method.
+First we save the data in a variable unparsed_page
+Then declare a variable doc which represents the parsed page.
+Then we can puts doc (which will be a ton of information - more than we need).
+Instead we can call extract_usa_data and pass in the doc variable.
+
+We need to require the scraper file in our cli.rb file and run that method at the beginning of our program.
+
+In the cli.rb file:
+
+require_relative 'scraper.rb'
+
+Then at the beginning of our run method we want to call Scraper.scrape_data:
+  def run
+    Scraper.scrape_data
+    greeting
+    while menu != 'exit'
+    end
+    end_program
+  end
+
+In order to know what to extract in the extract_usa_data method, we'll need to inspect the webpage. What we want is the element with the class "maincounter-number".
+This will actually give us an array of divs that all have that class.
+
+(At this point German includes the gem byebug in the Gemfile and then runs bundle install, then require 'byebug' in the scraper.rb file. That allows us to use a debugger.)
+
+Then we find the specfic element of the array that we want to use:
+usa_confirmed_cases = country_main[0].text.strip
+(If the website ever changes its layout this code will break.)
+We could add .to_i to convert it to an integer, but that will take away the commas and give us groups of numbers in sets of three, not the total 110,316,061.
+
+
+Then we can create a class to format this information all in one place (the cases, deaths, and recovered numbers).
+We create a new file country.rb
+
+class Country
+
+  attr_accessor :name, :confirmed_cases, :overall_deaths, :recoveries
+
+  @@countries = []
+
+  def initialize(name, confirmed_cases, overall_deaths, recoveries)
+    @name = name
+    @confirmed_cases = confirmed_cases
+    @overall_deaths = overall_deaths
+    @recoveries = recoveries
+    @@countries << self
+  end
+
+  def self.all
+    @@countries
+  end
+
+end
+
+
+We'll use a class variable for the countries array.
+When we create an instance of a Country, we want to initalize all the attributes.
+When a new instance gets created it will also get added to the class variable, the array of countries (@@countries << self).
+Then we create a class method that will return countries. 
+
+
+Then in the scraper.rb we need to require_relative 'country.rb'
+Then in the extract usa data we can call Country.new() to create a new instance with the info we get here.
+
+If we save that in a variable usa we can print that and see we're getting the right instance. 
+Instead we'll do it in the cli.rb file. 
+
+Then in the Country class we can grab the first country from the countries array.
+def self.first
+  @@countries[0]
+end
+
+In the cli.rb file we require_relative 'country.rb'
+And in the third when case we extract the usa info and print it:
+
+when "3"
+  puts "Printing USA information..."
+  country = Country.first
+  puts country.name
+  puts country.confirmed_cases
+  puts country.overall-deaths
+  puts country.recoveries
+end
+
+
+# video: USA Covid-19 CLI - Web Scraping US States
