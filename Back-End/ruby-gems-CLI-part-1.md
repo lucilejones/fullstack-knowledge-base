@@ -381,3 +381,37 @@ when "1"
 
 
 # video: USA Covid-19 CLI - More Options
+
+when '2'
+  puts 'Listing top ten states with the most confirmed covid cases..."
+  State.all[0..9].each_with_index do |state, i|
+    puts "#{i+1} #{state.name} - #{state.confirmed_cases}"
+  end
+
+
+We can also add another option (in the list_options method):
+
+  puts "4. List top ten states with the most overall deaths."
+
+Then in the when cases: 
+
+when '4'
+  puts "Listing top ten states with the most overall deaths..."
+
+  sort_states = State.all.sor_by{|state| state.overall_deaths}
+
+  sort_states[0..9].each_with_index do |state, i|
+    puts "#{i+1} #{state.name} - #{state.overall_deaths}"
+  end
+
+
+First we need to sort the array of states and then iterate and list the top 10.
+We can also use a condition to make sure DC doesn't get included:
+
+if(name != 'District of Columbia')
+  State.new(name, cases, deaths, recoveries)
+end
+
+We'll also need to turn the overall_deaths strings into numbers in order to accurately compare them. 
+We can use gsub (a built-in method) to strip away the commas, and then turn it into an integer.
+sort_states = State.all.sor_by{|state| state.overall_deaths.gsub(/,/, '').to_i}
