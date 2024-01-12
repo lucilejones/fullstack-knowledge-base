@@ -101,7 +101,78 @@ In a practical sense, we're more likely to get data from a website using an API 
 
 
 # Countries of the World CLI
+A CLI is a command line interface - a program that allows you to interact with your computer using the command line. (Example: the Angular CLI)
 
+In the lib directory, in a file called cli.rb:
+class CLI
+  def start
+    puts "Welcome to the Countries of the World CLI!"
+    puts "What is your name?"
+    name = gets.strip
+    puts "Hello #{name}!"
+  end
+
+  def get_input
+    gets.strip
+  end
+end
+
+To start, we define a class CLI with methods. First we print a welcome message and ask the user for their name.
+
+Then we use the gets global method to get the user's input and use strip to remove any whitespace. We will use puts to print the user's name. 
+
+We'll create a new instance of the CLI class in the main.rb and call the start method:
+
+require_relative './lib/cli.rb'
+
+CLI.new.start
+
+
+To add tests:
+run
+bundle add rspec
+This will add respc to our Gemfile and lock file.
+run
+bundle exec rspec --init
+This initializes rspec into the project folder. It creates an .rspec filr and a spec directory with a spec_helper.rb file.
+Then we run
+gem install rspec
+This lets us use the rspec gem in the shell (commands like rspec)
+
+Then we create a new file spec/cli_spec.rb with the following test code:
+require_relative "../lib/cli.rb"
+
+RSpec.describe CLI do
+  describe "#start" do
+    it "prints a welcome message and asks the user for their name" do
+      cli = CLI.new
+
+      # Stubbing the standard input to simulate user input
+      allow(cli).to receive(:gets).and_return("John Doe\n")
+
+      # Expecting specific output to standard output
+      expect { cli.start }.to output(
+        "Welcome to the Countries of the World CLI!\nWhat is your name?\nHello John Doe!\n"
+      ).to_stdout
+    end
+  end
+end
+
+RSpec.describe method - we describe the start method of what we will be testing
+it method - describe what the start method does
+The test demonstrates the creation of a new CLI object
+allow method - allows the cli objec to receive the get_input method
+expect method - expect the cli.start method to output the welcome message and ask the user for their name
+
+run
+bundle exec rspec
+to run the test
+
+rspec - will use the globally installed version of rspec
+bundle exec rspec - will use the locally installed version of rspec
+
+
+# Web Scraping with Nokogiri and httparty Part 2
 
 
 
