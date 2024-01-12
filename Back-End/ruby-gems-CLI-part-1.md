@@ -270,6 +270,10 @@ class Country
     @@countries
   end
 
+  def self.first
+    @@countries[0]
+  end
+
 end
 
 
@@ -304,3 +308,76 @@ end
 
 
 # video: USA Covid-19 CLI - Web Scraping US States
+We'll target the table of States data: tbody and tr
+
+First, in the self.scrape_data method(in the scraper.rb file) we'll add a call to the extract_states_data(doc) method (and pass the same doc we did for the usa data).
+This will give us the info in a Nokogiri instance.
+Then we separate each line of the table and create an array of Nokogiri instances.
+
+We need to include a parameter - doc - to reference the argument that we're passing.
+
+def self.extract_states_data(doc)
+  states_table = doc.css('tbody tr')
+
+  states_table[1..51].each do |row|
+    name = row.css('td')[1].text.strip
+    cases = row.css('td')[2].text.strip
+    deaths = row.css('td')[4].text.strip
+    recoveries = row.css('td')[6].text.strip
+
+    State.new(name, cases, deaths, recoveries)
+  end
+end
+
+We'll use the css method and pass in the selectors we need to use (tbody and tr)
+Then we can iterate over the states_table and get the data from each row.
+We can use a range [1..51] to say that we don't want the first row [0] because that's the headers, and we only want to go through to the 50 states (so the [51] index).
+Then we want to extract the td, the table data.
+
+
+Then we'll create a State class in a state.rb file
+We could try to inherit from the Country class, except that we don't need the array of countries (@@countries), so in this case it might be better to keep them separate.
+
+class State
+  attr_accessor :name, :confirmed_cases, :overall_deaths, :recoveries
+
+  @@states = []
+
+  def initialize(name, confirmed_cases, overall_deaths, recoveries)
+    @name = name
+    @confirmed_cases = confirmed_cases
+    @overall_deaths = overall_deaths
+    @recoveries = recoveries
+    @@states << self
+  end
+
+  def self.all
+    @@states
+  end
+
+  def self.first
+    @@states[0]
+  end
+
+end
+
+Then in the scraper.rb file we require_relative 'state.rb'
+And we create a new State instance in the extract_states_data method:
+State.new(name, cases, deaths, recoveries)
+
+Then in the cli.rb file we require_relative 'state.rb'
+And print all the states:
+
+when "1"
+  puts "Listing all states..."
+  State.all.each do |state|
+    puts '---------'
+    puts "Name: #{state.name}"
+    puts "Cases: #{state.confirmed_cases}"
+    puts "Deaths: #{state.overall_deaths}"
+    puts "Recoveries: #{state.recoveries}"
+    puts '---------'
+  end
+
+
+# video: USA Covid-19 CLI - More Options
