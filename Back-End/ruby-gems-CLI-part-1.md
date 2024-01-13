@@ -361,6 +361,43 @@ class CLI
 end
 
 
+# Adding technical documentation
+Can be written text or illustrations that accompany computer software or are embedded in the source code. It can explain how the software operates or how to use it.
+
+Internal documentation: written for the developer; not meant for the end user. For the developer to understand the codebase and the architecture of the codebase.
+External documentation: written for the end user. For the user to understand how to use the software.
+
+In the readme.md file we can add:
+# Countries of the World CLI
+
+## Description
+
+The Countries of the World CLI is a command line interface that allows you to get information about countries. It uses this [site](https://www.scrapethissite.com/pages/simple/) to get the information.
+
+## Installation
+
+1. Clone the repository
+2. Run `bundle install`
+3. Click `run`to run project.
+
+## Gems
+
+### Nokogiri
+
+[Nokogiri](https://rubygems.org/gems/nokogiri) is a gem that allows you to parse HTML and XML documents.
+
+### HTTParty
+
+[HTTParty](https://rubygems.org/gems/httparty) is a gem that allows you to make HTTP requests.
+
+### RSpec
+
+[RSpec](https://rubygems.org/gems/rspec) is a gem that allows you to test your code.
+
+## License
+
+The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+
 
 
 
