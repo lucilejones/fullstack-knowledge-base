@@ -173,6 +173,193 @@ bundle exec rspec - will use the locally installed version of rspec
 
 
 # Web Scraping with Nokogiri and httparty Part 2
+website that allows legal web scraping: www.scrapethissite.com
+Some do not allow it and you could get banned
+
+We'll add nokogiri and httparty to the Gemfile, then run bundle install
+
+In a new file scraper.rb
+require "nokogiri"
+require "httparty"
+
+module Scraper
+  INDEX_URL = 'https://www.scrapethissite.com/pages/simple/'
+  def self.scrape_countries
+    unparsed_page = HTTParty.get(INDEX_URL)
+    parsed_page = Nokogiri::HTML(unparsed_page.body)
+    puts parsed_page
+  end
+end
+
+
+The Scraper module defines a scrape_countries method that makes a GET request to the INDEX_URL and parses the HTML document.
+The HTTParty.get method makes a GET request to the url.
+The Nokogiri::HTML method parses the HTML document.
+The puts method prints out the parsed HTML document to the terminal.
+
+Then we'll call the scrape_countries method from the start method in the cli.rb file.
+require_relative "scraper.rb"
+
+class CLI
+  def start
+    Scraper.scrape_coutnries
+...
+
+We need to find a way to select the div element that holds all the country elements and then select the country elements. They all have the same class, country, so we can use that.
+countries = parsed_page.css("div.country")
+puts countries
+This will give us the divs with the class of coutry. But we want to select the country name, capital, population, and area. 
+
+    countries.each do |country|
+      name = country.css("country-name").text
+      capital = country.css("country-capital").text
+      population = country.css("country-population").text
+      area = country.css("country-area").text
+
+      puts "#{name} #{capital} #{population} #{area}"
+
+However, this will get all blanks. We must've done something wrong.
+We can use the byebug gem.
+
+The byehub gem helps us debug our code. It's similar to the debugger in JS. We can pause the code and inspect it.
+
+Add gem "byebug" to the Gemfile.
+Then run bundle install.
+
+We can add the byebug gem to our scraper.rb file.
+require "byebug"
+
+Then we add debugger where we want the code to pause. We'll put it right after
+area = country.css("country-area").text
+debugger;
+
+
+This will pause our code and we have access to the variables. In the terminal we see:
+[16, 25] in /home/runner/countriesoftheworldcli/lib/scraper.rb
+   16:     countries.each do |country|
+   17:       name = country.css("country-name").text
+   18:       capital = country.css("country-capital").text
+   19:       population = country.css("country-population").text
+   20:       area = country.css("country-area").text
+   21:       debugger;
+=> 22:       puts "#{name} #{capital} #{population} #{area}"
+   23:     end
+   24:   end
+   25: end
+
+If we type name and print enter, it will return an empty string: ""
+This is where we can try different things with the css selectors to actually get what we want. 
+If we inspect the webpage, we see that the country class element has an h3 and a div with the country info.
+This means country represents both those elements as well. We need to select the h3 and div separately.
+
+If we enter country in the terminal, we get back a Nokogiri instance. 
+We can call nokogiri methods on it.
+So we can type country.css("h3").text
+
+We do get back the country name, but it a weird format:
+"\n                            \n                            Andorra\n                        "
+
+So we can use the strip method to remove the whitespace:
+country.css("h3").text.strip
+That prints "Andorra"
+
+The css selectors should also have periods at the beginning; it should be .country-name instead of country-name, etc. That's because these are classes and shouldn't be selected as elements. 
+
+We enter exit in the terminal to exit the debugger, 
+and then we can updated the scraper.rb file with periods in the css selectors.
+require "nokogiri"
+require "httparty"
+require "byebug"
+module Scraper
+  INDEX_URL = 'https://www.scrapethissite.com/pages/simple/'
+  def self.scrape_countries
+    unparsed_page = HTTParty.get(INDEX_URL)
+    parsed_page = Nokogiri::HTML(unparsed_page.body)
+    countries = parsed_page.css("div.country")
+
+    countries.each do |country|
+      name = country.css(".country-name").text.strip
+      capital = country.css(".country-capital").text.strip
+      population = country.css(".country-population").text.strip
+      area = country.css(".country-area").text.strip
+      puts "#{name} #{capital} #{population} #{area}"
+    end
+  end
+end
+
+We use .strip to take out the whitespace.
+We also need to comment our the debugger line in our code.
+
+Then we get a list of countries printed to the terminal!
+
+We can now use this data for our CLI.
+
+We can create a country class to store the data. 
+In a new file called country.rb:
+class Country
+  attr_accessor :name, :capital, :population, :area
+
+  @@all = []
+
+  def initialize(name, capital, population, area)
+    @name = name
+    @capital = capital
+    @population = population
+    @area = area
+    @@all << self
+  end
+
+  def self.all
+    @@all
+  end
+end
+
+We use the attr_accessor method to create getters and setters for the name, capital, population, and area attributes.
+The @@all class variable stores all the instances of the Country class.
+The initialize method initializes a new Country object with a name, capital, population, and area.
+
+We can update the scraper.rb file to create a new Country object and store the data in it.
+
+require_relative "./country.rb"
+...
+    countries.each do |country|
+      name = country.css(".country-name").text.strip
+      capital = country.css(".country-capital").text.strip
+      population = country.css(".country-population").text.strip
+      area = country.css(".country-area").text.strip
+      Country.new(name, capital, population, area)
+    end
+...
+
+Then let's add search functionality and display the data to the user.
+In the cli.rb file:
+require_relative "./scraper.rb"
+
+class CLI
+  def start
+    Scraper.scrape_countries
+    puts "Welcome to the Countries of the World CLI!"
+    puts "What is your name?"
+    name = gets.strip
+    puts "Hello #{name}!"
+    puts "Please enter a country name to get more information about it."
+    input = gets.strip
+    country = Country.all.find { |country| country.name.downcase == input.downcase }
+    if country === nil
+      puts "Sorry, that country is not in our database. Please try again."
+    else
+      puts "Name: #{country.name}"
+      puts "Capital: #{country.capital}"
+      puts "Population: #{country.population}"
+      puts "Area: #{country.area}"
+    end
+  end
+
+  def get_input
+    gets.strip
+  end
+end
+
 
 
 
