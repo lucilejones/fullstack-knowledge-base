@@ -710,3 +710,28 @@ end
 We'll also need to turn the overall_deaths strings into numbers in order to accurately compare them. 
 We can use gsub (a built-in method) to strip away the commas, and then turn it into an integer.
 sort_states = State.all.sor_by{|state| state.overall_deaths.gsub(/,/, '').to_i}
+
+
+
+# Notes from class 1/15/24
+
+system("clear") - reserved word, built-in method. "clear" will clear out the terminal.
+
+In our class API, we write a class method using self becuase we want it to not be dependent on a specific instance of the class.
+def self.find_films_by_year(year)
+
+end
+
+For this project, Nolan used the gems: pry, nokogiri, and open-uri
+And a gem json that is built into Ruby 3.
+
+Scraping is getting the HTML document info off a webpage.
+
+scraped_movies = JSON.parse(doc.text)
+
+To find out whether a site is scrapable:
+check their robots.txt file by doing https://example.com/robots.txt
+Or check their API or ToC (usually in the footer)
+
+In Ruby, to get access to the key of an object, we use bracket notation:
+puts "#{movie["title"]}"
