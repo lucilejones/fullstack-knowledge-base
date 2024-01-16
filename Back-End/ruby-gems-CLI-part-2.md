@@ -195,3 +195,110 @@ end
 
 
 # File and Data Manipulation
+Changing the contents of a file or data are very common tasks in programming. In special cases, we may need to monitor outputs of responses and bundle them into a file. Or we may need to extract a csv file from a database and convert it to a json file. 
+
+We will use the Countries of the World CLI for an example of how to add onto a file and manipulate data. We'll add usernames and their encrypted hashes into an external json file. The json file will store the data in a key-value pair format. 
+(In the real world, we'd use a database to store this info, but for the example we'll use a json file.)
+
+In our user.rb file, we'll define a method that stores the user info.
+We need to require 'json' in the user.rb file in order to use the JSON class:
+
+require 'json'
+.
+.
+.
+  def store_credentials(user)
+    file_path = 'users.json'
+
+    unless File.exist?(file_path)
+      File.open(file_path, 'w') { |file| file.write(JSON.generate([])) }
+    end
+  end
+
+The File class is used to read and write files. 
+The File.exist? method takes a file path as an argument and returns true if the file exits and false if it doesn't.
+The File.open method takes a file path and a block as arguments and opens the file for reading and writing.
+The JSON.generate method takes an array as an argument and returns a JSON string. This will create a JSON file with an empty arry if the file doesn't exist.
+
+def store_credentials(user)
+    file_path = 'users.json'
+
+    unless File.exist?(file_path)
+      File.open(file_path, 'w') { |file| file.write(JSON.generate([])) }
+    end
+
+    file = File.read(file_path)
+    users_data = JSON.parse(file)
+
+    users_data << { 'username' => user.username, 'password' => user.password }
+
+    File.open(file_path, 'w') { |file| file.write(JSON.generate(users_data)) }
+  end
+
+Then we call store_credentials as the user is initialized:
+
+def initialize(username, password)
+    @username = username
+    @password = BCrypt::Password.create(password)
+    store_credentials(self)
+    @@users << self
+  end
+
+Once we check to see whether the file exists, we will read the file and parse the JSON string into an array. We then add the user's username and password to the array and write the array back to the file.
+
+Now we can sign up and add the credentials to users.json.
+
+This will create a small issue with login.
+Every time we load the file and initialize new user instances we are creating a new password each and every time. This is not correct. We need to change our logic. To fix this, we can add a new paramenter to indicate if the password is a pre-existing hash or a new one.
+
+def initialize(username, password, password_pre_hashed = false)
+    @username = username
+    @password = password_pre_hashed ? BCrypt::Password.new(password) : BCrypt::Password.create(password)
+    @@users << self
+  end
+
+We use a ternary operator to check if the password is pre-hashed. If it is, we use the BCrypt::Password.new method to create a new password object from the pre-hashed password. We aren't able to verify the password with the == method if it's pre-hashed. 
+The BCrypt::Password.new method takes a string as an argument and returns a password object. 
+If the password is not pre-hashed, we use the BCrypt::Password.create method to create a new password object from the password.
+
+We can add true for the new argument in our load_users_from_file method because lodaing users will ahve an existing password pre-hashed.
+
+def self.load_users_from_file
+    file_path = 'users.json' # Path to your JSON file
+
+    if File.exist?(file_path)
+      file = File.read(file_path)
+      users_data = JSON.parse(file)
+
+      users_data.each do |user_data|
+        User.new(user_data['username'], user_data['password'], true) # true indicates that the password is already hashed
+      end
+    end
+  end
+
+Because we will store credentials in the CLI class, we need to change it from an instance method to a class method (add def self.store_credentials instead of def store_credentials.)
+Also take out the method call in the initialize method for the User class:
+store_credentials(self)
+
+Then we need to include the argument for when a user creates an account.
+In our cli.rb file:
+def create_account
+    puts 'Please enter a username:'
+    username = gets.chomp
+
+    puts 'Please enter a password:'
+    password = gets.chomp
+
+    user = User.new(username, password, false) # false indicates that the password is not hashed
+    User.store_credentials(user) #
+    puts 'Account created'
+  end
+
+And load the users from file at the start:
+class CLI
+  def start
+    User.load_users_from_file
+    Scraper.scrape_countries
+
+
+# Video: USA Covid 19 CLI - Authentication
