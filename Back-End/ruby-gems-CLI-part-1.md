@@ -446,7 +446,6 @@ class CLI
     
     when "2"
       puts "Listing top ten states with the most confirmed covid cases..."
-    end
 
     when "3"
       puts "Printing USA information..."
