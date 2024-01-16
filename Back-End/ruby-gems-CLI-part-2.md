@@ -302,3 +302,150 @@ class CLI
 
 
 # Video: USA Covid 19 CLI - Authentication
+We'll start with a User class. In a user.rb file (in the lib folder):
+require 'bcrypt'
+
+class User
+    attr_accessor :username, :password
+
+    @@users = []
+
+    def initialize(username, password)
+        @username = username
+        @password = BCrypt::Password.create(password)
+
+        @@users << self
+    end
+
+    def.self.all
+        @@users
+    end
+
+end
+
+We want to store all the users as they're created in the array @@users. The passwords are being hashed before they're stored.
+
+We want to add a method to authenticate the user:
+def self.authenticate(username, password)
+    user = User.find_by_username(username)
+end
+
+We start by finding the user (by username). We'll define a separate method for that (using the built-in method find):
+def self.find_by_username(username)
+    user = all.find do |user|
+        user.username == username
+    end
+end
+
+We compare each user's username to the username we pass in as an argument. The method will return a user. If we can't find a user, it's going to return nil.
+
+Then in the authenticate function we'll say, if user is not nil and that user's password equals the password that we passed in, we want to return that user. Otherwise we want to return nil. 
+
+if user && user.password == password
+    return user
+else
+    return nil
+end
+
+Full method:
+def self.authenticate(username, password)
+    user = User.find_by_username(username)
+
+    if user && user.password == password
+        return user
+    else
+        return nil
+    end
+end
+
+
+Next, in the cli.rb file we want to authenticate the user.
+In the run method, before even scraping the data, we'll add a call to an authenticate method.
+def run
+    authenticate
+    Scraper.scrape_data
+...
+end
+
+
+At the end of the cli.rb file (still inside the CLI class):
+
+def authenticate
+    authenticated = false
+
+    until authenticated
+        puts "Please login or sign up"
+        puts "Which do you choose? (sign up/login)"
+
+        get_input = gets.chomp
+        if get_input == 'login'
+
+        else
+
+        end
+
+    end
+end
+
+We'll first check to see if the user is going to login or signup. 
+We'll define a variable authenticated and first set it to false. We don't want them to go into the program unless authenticated is true.
+
+We can define another method called login and call the authenticate method from the User class. (So we need to require_relative the user.rb file in the cli.rb file.) Because User.authenticate returns a value, we can save it in a result. Then if the user is authenticated, result is true, we'll puts a welcome message. Otherwise, we'll puts "Invalid username or password". 
+
+def login
+    puts "Please enter your username"
+    username = gets.chomp
+    puts "Please enter your password"
+    password = gets.chomp
+
+    result = User.authenticate(username, password)
+
+    if result
+        puts "Welcome back #{username}"
+    else
+        puts "Invalid username or password"
+    end
+
+    result
+end
+
+And then we'll return result. We want to return result because we want to set our authenticated variable to login.
+
+if get_input == login
+    authenticated = login
+else
+
+end
+
+If the user wasn't authenticated becase the user is nil, then athenticated will be nil and that method will keep on looping.
+
+We also need a create_account method (under the login method in the cli.rb):
+
+def create_account
+    puts "Please enter your username"
+    username = gets.chomp
+    puts "Please enter your password"
+    password = gets.chomp
+
+    User.new(username, password)
+    puts "Account created!"
+end
+
+We'll call create_account in our authenticate method.
+
+def authenticate
+    authenticated = false
+
+    until authenticated
+        puts "Please login or sign up"
+        puts "Which do you choose? (sign up/login)"
+
+        get_input = gets.chomp
+        if get_input == 'login'
+            authenticated = login
+        else
+            create_account
+        end
+
+    end
+end
