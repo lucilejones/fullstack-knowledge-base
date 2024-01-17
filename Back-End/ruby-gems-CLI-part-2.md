@@ -509,3 +509,65 @@ def self.store_credentials(user)
 
     File.open(file_path, "w") { |file| file.write(JSON.generate(users_data)) }
 end
+
+
+# Video - USA Covid 19 CLI - Loading Users from File
+We want to load in the file of users at the start of the program so users can login.
+
+In the run method (in the cli.rb file), right before we authenticate and scrape the data, we'll make a call to the method User.load_users_from_file
+
+def run
+    User.load_users_from_file
+    authenticate
+...
+end
+
+We'll define that method in the user.rb file:
+
+def self.load_users_from_file
+    file_path = 'users.json'
+
+    if File.exist?(file_path)
+        file = File.read(file_path)
+        users_data = JSON.parse(file)
+
+        users_data.each do |user_data|
+            User.new(user_data['username'], user_data['password'])
+        end
+    end
+
+end
+
+We first read the file, then use Ruby to parse the JSON file, then iterate and create user instances (using User.new) from the array of hashes.
+
+The issue here, though, is that when we use the password from the hash to create the user instance it will re-encrypt the hash into something else. 
+(In the initialize method in the User class: @password = BCrypt::Password.create(password))
+But we want to reuse the hash. 
+What we can do is include an additional parameter to the initialize method indicating whether it is an existing password. We'll set the default to false.
+def initialize(username, password, exisiting_hash = false)
+    @username = username
+    @password = existing_hash ? BCrypt::Password.new(password) : BCrypt::Password.create(password)
+
+    @@users << self
+end
+
+If existing_hash is true, we can use BCrypt to create a new instance or a new value from the existing hash; we're not re-encrypting it, we're just creating a new hash (that we can still use with the existing password the user entered). 
+But then we want to take out the call to User.store_credentials(self)
+We don't want to add those same users into the file (the same one that we're loading at the beginning).
+
+Instead, we can add the user to the file when they sign up for an account, right after the user instance has been made.
+
+In the cli.rb file:
+def create_account
+...
+    user = User.new(username, password)
+    User.store_credentials(user)
+    puts "Account created!"
+end
+
+Then in the self.load_users_from_file (in the user.rb file), we want to set the third parameter to true:
+
+users_data.each do |user_data|
+    User.new(user_data['username'], user_data['password'], true)
+end
+
