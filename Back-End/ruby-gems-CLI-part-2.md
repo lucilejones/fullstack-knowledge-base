@@ -300,6 +300,9 @@ class CLI
     User.load_users_from_file
     Scraper.scrape_countries
 
+This will actually create the file user.json with an array populated with users.
+example: [{"username":"user1","password":"$2a$12$S9TGuHbnjSwHzoqcLhZ9SuSbpUmYukhKLjQT6hHMev0EXa0HV/uQS"}]
+
 
 # Video: USA Covid 19 CLI - Authentication
 We'll start with a User class. In a user.rb file (in the lib folder):
@@ -448,4 +451,61 @@ def authenticate
         end
 
     end
+end
+
+
+# Video: USA Covid-19 CLI - Adding Users to File
+Adding users to an external file as they signup.
+We can use Ruby's built-in File class.
+We're going to save the data in a JSON file, which is like a JSON object, sort of like a hash. Then we can access info through keys. 
+
+In the user.rb file, in the initialize method, we'll call a User.store_credentials method and pass in self.
+
+def initialize(username, password)
+    @username = username
+    @password = BCrypt::Password.create(password)
+
+    User.store_credentials(self)
+    @@users << self
+end
+
+Then we'll define a class method (still in the class User, but at the end):
+
+def self.store_credentials(user)
+    file_path = "users.json"
+    unless File.exist?(file_path)
+        File.open(file_path, "w") { |file| file.write(JSON.generate([])) }
+    end
+end
+
+This method will create a file if it doesn't exist and then add a user to the file.
+
+We'll declare a variable to represent out file path. And if the file doesn't exist already, we'll create it. 
+Then we use the File.open method to open a file with that file path - it's going to create that file (if it isn't already created) - and the second argument is a string that represents read or write access. "w" write indicates both.
+Then we include a one-line expression; as we're accessing the file once it's created, we want to write to the file a JS value as an empty array. (Because we're going to have an array of users.)
+
+In order to turn Ruby values into a JSON object we need to require 'json' at the top of the user.rb file.
+
+At this point so far if we run the program and sign up a new user we'll get a users.json file with an empty array. Then we can add the user to the file.
+
+We start by reading the file, File.read(file_path), and then we want to get the file, grab its content and parse that JSON object into a Ruby array.
+user_data = JSON.parse(file)
+Then we can use the shovel operator to push the user to the Ruby array. We won't just push the user because we want to store a hash and not an instance. So we have to manually define the hash.
+Ultimately we want an array of hashes.
+Next we open the file, and write to it the array of users_data. (Right now, with "w" this is going to override the file. If we wanted to append, we could use "a" and write different logic. Though that wouldn't work in this example.)
+
+
+
+def self.store_credentials(user)
+    file_path = "users.json"
+    unless File.exist?(file_path)
+        File.open(file_path, "w") { |file| file.write(JSON.generate([])) }
+    end
+
+    file = File.read(file_path)
+    users_data = JSON.parse(file)
+
+    users_data << { username: user.username, password: user.password }
+
+    File.open(file_path, "w") { |file| file.write(JSON.generate(users_data)) }
 end
