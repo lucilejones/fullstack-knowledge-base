@@ -571,3 +571,61 @@ users_data.each do |user_data|
     User.new(user_data['username'], user_data['password'], true)
 end
 
+
+
+# Notes from class 1/18/24
+In order to have sign up and login functionality, we'll define a User class with attributes and methods.
+
+seeding - a term used (usually in backend) to mean populating a database with initial data
+In this example, we'll define and array of hashes:
+
+def self.seed
+  users = [{ username: "joe123", password: "password"}, {username: "amy123", password: "pasword" }]
+
+  users.each do |user|
+    User.new(user[:username], user[:password])
+  end
+
+  nil # can put this to show there's no useful return value
+end
+
+For now (in these lessons) we have a class variable @@users = [] that is an array to hold all the users. Later, when using Rails, we won't need that variable.
+
+def self.find(id)
+  all.find { |user| user.id == id}
+end
+This will return the instance of user that makes this return true.
+
+all is a method available to the class with the method we defined:
+def self.all
+  @@users
+end
+
+BCrypt turns a password into a hash.
+The only way to match the value to the hash is to use the exact same password.
+
+A module is a way to group code together, but doesn't create instances/objects.
+
+To encrypt a plain text password, we access the BCyprt class and the Password method.
+BCrypt::Password.create(password)
+
+def self.verify_hash_digest(hash_password, plain_password)
+  BCrypt::Password.new(hash_password) == plain_password
+end
+
+We don't use hash_password == plain_password
+We use the .new() method 
+This returns an object that can be compared to the plain password.
+
+Analogy from Patrick (and Will) - in Slack channel:
+To summarize and confirm… a password (like a mix of fruits) is transformed into a hash (a smoothie) in a way that can’t be reversed.
+Just like you can’t get the original fruits back from a smoothie, you can’t turn a hash back into the original password.
+And when you blend the same fruits again, you get a similar smoothie, just like using the same password creates the same hash, helping to verify it’s the right one without needing the original.
+When you put the smoothie (the hash) in the freezer (the database) without a label, it’s like storing the hashed password without directly associating it with the original password. In real-world terms, the hash is stored, but not the password it came from.
+So, yes, your analogy captures the essence of one-way hashing and password verification in a pretty clear way.
+
+When a password hash is stored, it's stored as a string, not an instance. But its actually a BCrypt::Password instance.
+[look more into this]
+
+When a user is initialized, we save their password as a hash.
+@password = Auth.create_hash(password)
