@@ -23,7 +23,7 @@ If we run the file, we'll see output like this:
 $2a$12$Jn9OrCsfhWp9JosMmlGyoeTkq/8.YyNKdx6RPo32uyEbUI7I8UZKa
 
 The string starts with $2a$12$ and ends with a string of characters. 
-The $2a$12$ is called the salt and is used to make the password more secure. It is generated randomly and is different every time we run the BCrypt::Password.create method, and is stored with the encrypted password so the password can be verified later.
+The 22-character part after $2a$12$ is called the salt and is used to make the password more secure. It is generated randomly and is different every time we run the BCrypt::Password.create method, and is stored with the encrypted password so the password can be verified later. Then there is the 31-character hash.
 
 The encrypted password can be verified using the == method. This method takes a string as an argument and returns true if the string matches the encrypted password and returns false if it doesn't.
 
