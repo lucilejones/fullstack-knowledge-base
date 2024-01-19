@@ -188,6 +188,7 @@ It's executed from left to right: it will first order the result set in descendi
 
 
 Example table (practice):
+Select all rows from the Students table where the Major is equal to Computer Science and the GPA is greater than or equal to 3.5. Sort the result set in descending order by the GPA column. Limit the result set to 1 row.
 
 CREATE TABLE Students (
     StudentID int,
@@ -208,3 +209,70 @@ SELECT * FROM Students WHERE Major = 'Computer Science' AND GPA >= 3.5 ORDER BY 
 
 
 Aggregate Functions:
+Used to perform calculations on a set of values and return a single value.
+Often used with the GROUP BY clause of the SELECT statement.
+
+Most commonly used aggregate functions:
+AVG() - returns the average value
+COUNT() - returns the number of rows
+FIRST() - returns the first value
+LAST() - returns the last value
+MAX() - returns the largest value
+MIN() - returns the smallest value
+SUM() - returns the sum
+
+SELECT COUNT(*) FROM Employees;
+This returns the number of rows in the Employees table (the output is 2).
+
+SELECT AVG(BirthDate) FROM Employees;
+This returns the average birth date of all employees in the Employees table (output 1990.2)
+
+SELECT MAX(BirthDate) FROM Employees;
+This returns the largest birth day of employees in the Employees table (output 1991-02-02)
+
+Aggregate functions allow us to perform calculations on a set of values and return a single value.
+
+
+GROUP BY Clause:
+Used to group the result set by one or more columns. 
+Often used with aggregate functions like AVG(), COUNT(), MAX(), MIN(), and SUM().
+
+SELECT FirstName, COUNT(*) FROM Employees GROUP BY FirstName;
+This groups the result set by the FirstName column and returns the number of employees for each group.
+
+SELECT FirstName, COUNT(*) FROM Employees GROUP BY FirstName ORDER BY COUNT(*) DESC;
+This groups the result set by the FirstName column and returns the number of employees for each group, and also sorts the groups in descending order by number of employees.
+
+
+HAVING clause:
+Used to filter groups in the result set.
+Often used with aggregate functions like AVG(), COUNT(), MAX(), MIN(), and SUM()
+
+SELECT FirstName, COUNT(*) FROM Employees GROUP BY FirstName HAVING COUNT(*) > 1;
+This groups the result set by the FirstName column and returns the number of employees for each group; and it filters the groups that have more than 1 employee.
+
+
+Example (practice):
+Select all rows from the Students table and return the average GPA of all students. Group the result set by the FirstName column and return the average GPA for each group. Filter the groups that have more than 1 student. Sort the groups in descending order by the average GPA.
+
+CREATE TABLE Students (
+    StudentID int,
+    LastName varchar(255),
+    FirstName varchar(255),
+    BirthDate date,
+    Notes text,
+    GPA float
+);
+
+INSERT INTO Students (StudentID, LastName, FirstName, BirthDate, Notes, GPA)
+VALUES (1, 'Doe', 'John', '1990-01-01', 'John Doe was born on January 1, 1990.', 3.5);
+INSERT INTO Students (StudentID, LastName, FirstName, BirthDate, Notes, GPA)
+VALUES (2, 'Doe', 'Jane', '1991-02-02', 'Jane Doe was born on February 2, 1991.', 3.6);
+INSERT INTO Students (StudentID, LastName, FirstName, BirthDate, Notes, GPA)
+VALUES (3, 'Moe', 'John', '1992-03-03', 'Mary Doe was born on March 3, 1992.', 3.7);
+INSERT INTO Students (StudentID, LastName, FirstName, BirthDate, Notes, GPA)
+VALUES (4, 'Doe', 'Mark', '1993-04-04', 'Mark Doe was born on April 4, 1993.', 3.8);
+INSERT INTO Students (StudentID, LastName, FirstName, BirthDate, Notes, GPA)
+VALUES (5, 'Doe', 'Lisa', '1994-05-05', 'Lisa Does was born on May 5, 1884.', 3.9);
+
+SELECT FirstName, AVG(GPA) FROM Students GROUP BY FirstName HAVING COUNT(*) > 1 ORDER BY AVG(GPA) DESC;
