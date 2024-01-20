@@ -276,3 +276,82 @@ INSERT INTO Students (StudentID, LastName, FirstName, BirthDate, Notes, GPA)
 VALUES (5, 'Doe', 'Lisa', '1994-05-05', 'Lisa Does was born on May 5, 1884.', 3.9);
 
 SELECT FirstName, AVG(GPA) FROM Students GROUP BY FirstName HAVING COUNT(*) > 1 ORDER BY AVG(GPA) DESC;
+
+
+Introduction to Joins:
+A join clause combines rows from two of more tables based on a related table between them.
+
+For example, we have an Employee table with the following columns:
+EmployeeID, LastName, FirstName, DepartmentID, BirthDate, Notes, Salaray
+And a Departments table with the following columns:
+DepartmentID, DepartmentName, ManagerID, Location, Budget, Notes, Employees
+
+The Employees table has a column DepartmentID that is related to the DepartmentID column in the Departments table. This is called a foreign key. 
+A foreign key is a column or a group of columns in a table that uniquely identifies a row in another table. This creates a relationship between the two tables. 
+A one-to-many relationship: one row can be related to many rows in another table.
+For examples, one department can have many employees.
+
+If we use the following statement:
+SELECT * FROM Employees, Departments
+this will perform a cross join (also known as a Cartesian join); each row from the first table is combined with each row from the second table, resulting in every possible combination of rows between the two tables. 
+With 2 rows in Employees and 2 rows in Departments, the cross join will produce 2 * 2 = 4.
+
+However, this isn't super useful. There are other joins that will be more helpful.
+
+
+Inner Join:
+An inner join returns rows when there is a match in both tables. 
+The following statement joins the Employees table with the Departments table based on the DepartmentID column:
+SELECT * FROM Employees INNER JOIN Departments ON Employees.DepartmentID = Departments.DepartmentID;
+
+ON Employees.DepartmentID = Departments.DepartmentID specifies the columns that we want to join on.
+An inner join returns rows when there is a match in both tables. The above statement returns both employees that are in the Sales department including the department info. 
+
+1|Doe|John|1|1990-01-01|John Doe was born on January 1, 1990.|50000|1|Sales|1|New York|1000000|The Sales department is located in New York.|10
+2|Doe|Jane|1|1991-02-02|Jane Doe was born on February 2, 1991.|60000|1|Sales|1|New York|1000000|The Sales department is located in New York.|10
+
+
+Left Join:
+A left join returns all rows from the left table and the matched rows from the right table. It's different from an inner join, because it will return all rows from the left table even if there isn't a match in the right table.
+The left table is the table specified before the LEFT JOIN clause. 
+The right table is the table specified after the LEFT JOIN clause.
+
+[look for a better example than the one in the notes]
+
+
+Right Join:
+A right join returns all rows from the right table and the matched rows from the left table. It's different from an inner join because it will return all rows from the right table even if there's not match in the left table.
+
+
+Full Join:
+A full join returns all rows when there is a match in one of the tables. If there is a match between the two tables, it combines columns from the two tables into a single row.
+
+
+Self Join:
+A self join is used to join a table to itself.
+SELECT * FROM Employees e1 INNER JOIN Employees e2 ON e1.DepartmentID = e2.DepartmentID;
+
+e1 - an alias for the Employees table
+e2 - an alias for the Employees table
+
+
+# Bookstore practice problem
+
+CREATE TABLE Authors (
+    AuthorID int,
+    AuthorName varchar(255)
+)
+
+CREATE TABLE Books (
+    BookID int,
+    Title varchar(255),
+    AuthorID int,
+    PublicationYear int
+)
+
+CREATE TABLE Sales (
+    SaleID int,
+    BookID int,
+    QuantitySold int,
+    SaleDate date
+);
