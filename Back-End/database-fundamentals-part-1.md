@@ -338,20 +338,56 @@ e2 - an alias for the Employees table
 # Bookstore practice problem
 
 CREATE TABLE Authors (
-    AuthorID int,
+    AuthorID int, # primary key
     AuthorName varchar(255)
-)
+);
 
 CREATE TABLE Books (
-    BookID int,
+    BookID int, # primary key
     Title varchar(255),
-    AuthorID int,
+    AuthorID int, # foreign key
     PublicationYear int
-)
+);
 
 CREATE TABLE Sales (
-    SaleID int,
-    BookID int,
+    SaleID int, # primary key
+    BookID int, # foreign key
     QuantitySold int,
     SaleDate date
 );
+
+INSERT INTO Authors (AuthorID, AuthorName)
+VALUES (10, 'Jane Austen');
+INSERT INTO Authors (AuthorID, AuthorName)
+VALUES (20, 'Jonathan Safran Foer');
+
+INSERT INTO Books (BookID, Title, AuthorID, PublicationYear)
+VALUES (109, 'Pride and Prejudice', 10, 1813);
+INSERT INTO Books (BookID, Title, AuthorID, PublicationYear)
+VALUES (110, 'Emma', 10, 1815);
+INSERT INTO Books (BookID, Title, AuthorID, PublicationYear)
+VALUES (120, 'Everything is Illuminated', 20, 2002);
+INSERT INTO Books (BookID, Title, AuthorID, PublicationYear)
+VALUES (130, 'Extrememely Loud & Incredibly Close', 20, 2005);
+
+INSERT INTO Sales (SaleID, BookID, QuantitySold, SaleDate)
+VALUES (980, 109, 1, 2023-12-30);
+INSERT INTO Sales (SaleID, BookID, QuantitySold, SaleDate)
+VALUES (981, 109, 1, 2024-01-15);
+INSERT INTO Sales (SaleID, BookID, QuantitySold, SaleDate)
+VALUES (982, 130, 2, 2024-01-20);
+INSERT INTO Sales (SaleID, BookID, QuantitySold, SaleDate)
+VALUES (982, 130, 1, 2024-01-22);
+INSERT INTO Sales (SaleID, BookID, QuantitySold, SaleDate)
+VALUES (983, 110, 1, 2024-01-22);
+
+Write a query to display a list of all books with titles and authors:
+SELECT * FROM Books INNER JOIN Authors ON Books.AuthorID = Authors.AuthorID;
+
+Write a query to find all books with no sales:
+SELECT * FROM Books LEFT JOIN Sales ON Books.BookID = Sales.BookID WHERE SaleID IS NULL;
+
+Write a query to calculate the total quantity sold for each book:
+SELECT Title, SUM(QuantitySold) FROM Books INNER JOIN Sales ON Books.BookID = Sales.BookID GROUP BY TItle;
+
+Write a query to display dales data for all books sold in a specific year:
