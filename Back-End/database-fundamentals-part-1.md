@@ -371,15 +371,15 @@ INSERT INTO Books (BookID, Title, AuthorID, PublicationYear)
 VALUES (130, 'Extrememely Loud & Incredibly Close', 20, 2005);
 
 INSERT INTO Sales (SaleID, BookID, QuantitySold, SaleDate)
-VALUES (980, 109, 1, 2023-12-30);
+VALUES (980, 109, 1, '2023-12-30');
 INSERT INTO Sales (SaleID, BookID, QuantitySold, SaleDate)
-VALUES (981, 109, 1, 2024-01-15);
+VALUES (981, 109, 1, '2024-01-15');
 INSERT INTO Sales (SaleID, BookID, QuantitySold, SaleDate)
-VALUES (982, 130, 2, 2024-01-20);
+VALUES (982, 130, 2, '2024-01-20');
 INSERT INTO Sales (SaleID, BookID, QuantitySold, SaleDate)
-VALUES (982, 130, 1, 2024-01-22);
+VALUES (983, 130, 1, '2024-01-22');
 INSERT INTO Sales (SaleID, BookID, QuantitySold, SaleDate)
-VALUES (983, 110, 1, 2024-01-22);
+VALUES (984, 110, 1, '2024-01-22');
 
 Write a query to display a list of all books with titles and authors:
 SELECT * FROM Books INNER JOIN Authors ON Books.AuthorID = Authors.AuthorID;
@@ -390,7 +390,11 @@ SELECT * FROM Books LEFT JOIN Sales ON Books.BookID = Sales.BookID WHERE SaleID 
 Write a query to calculate the total quantity sold for each book:
 SELECT Title, SUM(QuantitySold) FROM Books INNER JOIN Sales ON Books.BookID = Sales.BookID GROUP BY TItle;
 
-Write a query to display dales data for all books sold in a specific year:
+Write a query to display sales data for all books sold in a specific year:
+
+The notes say this should work (and googling), but I can't get it to run in the online JDoodle.
+SELECT Title, QuantitySold FROM Books INNER JOIN Sales ON Books.BookID = Sales.BookID WHERE YEAR(SaleDate) = 2023;
+
 
 
 
@@ -413,7 +417,7 @@ VALUES (1, 'John Doe', 'john.doe@email.com'),
 Basics for table relationships: one-to-one, one-to-many, many-to-many
 
 INSERT INTO Orders (OrderID, CustomerID, OrderDate) VALUE (1, 1, '2023-01-15');
-INSERT INTO ORders (OrderID, CustomeID, OrderDate) VALUES (2, 2, '2023-01-17');
+INSERT INTO Orders (OrderID, CustomeID, OrderDate) VALUES (2, 2, '2023-01-17');
 
 ... 
 
