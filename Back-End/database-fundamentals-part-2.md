@@ -394,3 +394,69 @@ Database backup and recovery: processes to safeguard data by creating copies and
 
 
 # Installing Ruby
+
+
+
+
+# Video - Crows Foot ERD & Cardinality
+ERD: entity relationship diagram
+Help us plan out the structure of our database.
+
+https://www.lucidchart.com/pages/
+
+Click on Templates, then choose Database ER diagram
+Click and drag Entity Relationship filed boxes.
+
+Entity for User:
+primary key user_id number
+            email string
+            password string
+
+Primary key - unique id to select a specific entity
+
+Entity for Book:
+primary key book_id number
+            title string
+            author string
+            publish_year date
+            genre string
+            cover_image string
+foreign key user_id number
+
+Because users can save books, a book has a foreign key that relates the book to a user.
+A user can have 0 to many books.
+A book can have 0 to one user.
+
+
+Entity for Genre:
+primary key id number
+            slug string
+foreign key book_id number
+
+A slug is a placeholder, so we don't have to have an array of a bunch of genres.
+Each genre will be a whole row that has a slug, and the slug is a string that says something like "mystery" or "science fiction".
+The slug will be whatever data is input for that book.
+It's a way to create a scaleable genre category for an app.
+[look up more about this]
+
+Here we'll say a book can be attached to one or many genres, but each genre is attached to only one book.
+
+User table:
+user_id | email | password
+30001     test@test.com     #8flj*6
+
+Book table:
+book_id | title | author | first_published | user_id
+1234    Harry Potter    JK Rowling  1999    30001
+
+[the user_id would probably be an array because multiple users could have a book saved on their bookshelf - we'll go over that in a later lesson]
+
+Genre table:
+id | slug | book_id
+123 mystery 1234
+
+[the book_id would also be an array of multiple books, and the genre would be like a tag on the book; when a user searches for mystery it would find all books with the mystery tag attached to it]
+
+Setting it up with a slug makes it easier to create new rows later on.
+
+In the ERD the entities are set up with attributes in a column and those rows in the column become the column headers for the tables in the database. Then each entity is a row with those attributes. 
