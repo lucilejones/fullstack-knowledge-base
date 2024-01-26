@@ -182,7 +182,7 @@ The db folder contains the database schema and migrations for our app
 
 The lib folder contains the code that's shared between different parts of our app. For example, custom validators.
 
-The log foler contains the log files for our app. This is where we find info about what's happening in the app when it's running. We can find this while running the server or when we deploy the app to a server.
+The log folder contains the log files for our app. This is where we find info about what's happening in the app when it's running. We can find this while running the server or when we deploy the app to a server.
 
 The public folder contains the static files for our app: images, JS, CSS
 
@@ -193,6 +193,110 @@ The test folders contains the tests for our app.
 The tmp folder contains temporary files for our app.
 
 The vendor folder contains third-party code that is not managed by Bundler.
+
+
+Using the Rails CLI to generate a model
+
+Models are responsible for managing the data of the application; they're the interface between the app and the database. 
+Ruby on Rails has a built-in ORM (Object Realtional Mapping) called Active Record, which allows us to interact with the database using Ruby objects instead of SQL queries.
+
+Models also validate data and enforce business rules (like the rule that a user can't have the same email address as another user or that a product can't have a negative price)
+
+To create a model we can use the rails generate model command. We cd into the project folder, and then run
+rails generate model User name:string email:string
+
+rails generate model - the rails command used to create a model
+
+User - the name of the model; convention to use singular nouns for model names
+
+name:string email:string - attributes of the model.
+These define the columns of the database table. The name of the attribute and the type.
+
+This creates a new model called User (file path app/models/user.rb).
+It will also create a migration file for the User model.
+
+A migration is a Ruby class used to make changes to the database; a way to update the database schema. We can use migrations to create tables, add columns, and remove columns. 
+
+
+Migrations
+We can look at the migration file that was gnerated for us.
+Navigate to the db/migrate folder.
+The file name should look similar to this: 20240110170144_create_users
+And in the file should look similar to this:
+class CreateUsers < ActiveRecord::Migration[7.0]
+  def change
+    create_table :users do |t|
+      t.string :name
+      t.string :email
+
+      t.timestamps
+    end
+  end
+end
+
+class CreateUsers < ActiveRecord::Migration[7.0]
+-name of the migration class; it's convention to use the name of the model followed by the name of the migration.
+-Here, the model is User and the migration is CreateUsers; the migration class inherits from teh ActiveRecord::Migration class. This is the base class for all migrations.
+
+change method
+-used to make chages to the database; is a method defined by the ActiveRecord::Migration class
+
+create_table method
+-used to create a new table in the database; is a method defined in teh ActiveRecord::ConnectionAdapters::SchemaStatements class
+
+:users
+-name of the table; convention to use the plural form of the model name
+
+t.string:name
+t.string:email
+-names of the columns; convention to use the singular form of the attribute name
+
+t.timestamps
+-a shortcut for creating two columns called create_at and updated_at
+-these are used to store the date and time when a record is created and updated
+
+
+Common data types to use for our columns:
+string, text, integer, float, decimal, datetime, boolean, binary, json
+
+
+Migration files
+These are Ruby classes used to make changes to the database; a way to update the database schema. We can create tables, add columns, remove columns.
+
+The file name is prefixed with a timestamp, this determines the order in which migration files are applied. If we have two migration files with the same timestamp, Rails will apply them in alphabetical order. 
+Migrations can depend on each other.
+One migration might add a column to a table and another will remove that same column. 
+Rails will apply the first migration before the second. Called a migration dependency.
+
+We don't delete or modigy migration files. To make changes we create a new migration file.
+Rails uses the migration files to determine the current state of the database. 
+
+Since we generated the creation of the file using a Ruby on Rails command, it didn't auto create the table in the database. We need to run the migration file.
+We use:
+rails db:migrate
+
+This will runall the pending migrations.
+In this example, it will create the users table in the database.
+We'll see something like this:
+== 20231230191708 CreateUsers: migrating ======================================
+-- create_table(:users)
+   -&gt; 0.0018s
+== 20231230191708 CreateUsers: migrated (0.0019s) =============================
+
+If we made a mistake we can run:
+rails db:rollback
+This will rollback the last migration and reset the state of the migration file back to pending. It will remove the users tables from the database because that was the last migration we ran.
+
+Then we see something like this:
+== 20231230191708 CreateUsers: reverting ======================================
+-- drop_table(:users)
+   -&gt; 0.0018s
+== 20231230191708 CreateUsers: reverted (0.0019s) =============================
+
+[but then we'll run the rails db:migrate again because we do want the users table]
+
+We can rollback muliple migrations by specifying the number of migrations we want to rollback.
+rails db:rollback STEP=2
 
 
 # Interacting with the Database with Models
