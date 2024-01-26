@@ -460,3 +460,60 @@ id | slug | book_id
 Setting it up with a slug makes it easier to create new rows later on.
 
 In the ERD the entities are set up with attributes in a column and those rows in the column become the column headers for the tables in the database. Then each entity is a row with those attributes. 
+
+
+# Notes from class 1/25/24:
+To create diagrams (ERDs):
+app.diagrams.net
+Lucid charts
+plugin for VS Code
+https://marketplace.visualstudio.com/items?itemName=dineug.vuerd-vscode
+
+(1:1...N): an author can have one or more books and a book belongs to an author
+[the author needs to have at least one book to be considered an author]
+(1:0...N): a publisher can have zero to many books and a books belongs to a publisher
+
+In the chart, we use the one-to-many line and a mandatory symbol - it's mandatory for a book to be associated with an author.
+
+An author can have many publishers (through books) and a publisher can have many authors (through books).
+
+CREATE TABLE Authors (
+  AuthorID INT PRIMARY KEY,
+  name TEXT,
+  Bio TEXT
+);
+
+CREATE TABLE Publishers (
+  PublisherID INT PRIMARY KEY,
+  Name TEXT,
+  Address TEXT
+);
+
+CREATE TABLE Books (
+  BookID INT PRIMARY KEY,
+  Title TEXT,
+  AuthorID INT,
+  PublisherID INT,
+  FOREIGN KEY (AuthorID) REFERENCES AUTHORS(AuthorID),
+  FOREIGN KEY (PublisherID) REFERENCES PUBLISHERS(PublisherID)
+);
+
+INSERT INTO Books(BookID, Title, AuthorID, PublisherID)
+VALUES(
+  1,
+  'Carry On',
+  1,
+  1
+);
+[also INSERT INTO Authors and Publishers]
+
+SELECT
+  Authors.Name AS AuthorName,
+  Publishers.Name AS PublisherName,
+  Books.Title
+FROM
+  Books
+INNER JOIN Authors ON Books.AuthorID = Authors.AuthorID
+INNER JOIN Publishers On Books.PublisherID = Publishers.PublisherID;
+
+Output: Rainbow Rowell | Noon Virtual Group | Carry On
