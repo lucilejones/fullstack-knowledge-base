@@ -443,7 +443,16 @@ User.where(name: "John Doe", email: "johndoe@gmail.com")
 
 
 Other model class methods:
-
+find_by - find a record by a specific attribute
+count - count the number of records
+first - find the first record
+last - find the last record
+all - find all records
+where - find records by a specific attribute
+where.not - find records that don't have a specific attribute
+order - order records by a specific attribute
+limit - limit the number of records
+offset - offset the number of records
 
 
 # Intro to Associations
