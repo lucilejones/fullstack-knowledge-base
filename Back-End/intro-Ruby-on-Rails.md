@@ -625,4 +625,48 @@ user = User.create(name: "James Underway", email: "james_underway@gmail.com", pr
 
 One-to-many: belongs to and has many associations
 
+We can create a post table:
+rails generate model Post user:references title:string body:text published:boolean published_at:datetime
 
+Post - the name of the model
+
+user:references - the type of the attribute; here we're using the references type, meaning the attribute will be a reference to another model - the User model. This will create a user_id column in the posts table.
+
+In the app/models/post.rb file:
+class Post < ApplicationRecord
+  belongs_to :user
+end
+
+Then we run the migration file:
+rails db:migrate
+
+And in the app/models/user.rb file we add the following code:
+class User < ApplicationRecord
+  validates :name, presence: true
+  validates :email, presence: true, uniqueness: true
+
+  before_create :downcase_email
+
+  has_one :profile
+  has_many :posts
+
+  private
+
+  def downcase_email
+    self.email = email.downcase
+  end
+end
+
+has_many :posts - this method adds the one-to-many relationship; it takes two arguments, the name of the association and the options. Here, we se has_many meaning the user has many posts. This will create a posts method that returns the posts associated with the user.
+
+We can create a new user with a post:
+user = User.create(name: "Amy Underway", email: "@email.com", posts: [Post.new(title: "Hello World", body: "This is my first post", published: true, published_at: "2023-12-30 19:17:08")])
+
+We can also do something like:
+user = User.find(1)
+post = Post.new(title: "Hello World", body: "This is my second post", published: true, published_at: "2023-12-30 19:17:08")
+user.posts << post
+
+Then we can find the user and their posts:
+user = User.find(1)
+user.posts
