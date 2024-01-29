@@ -670,3 +670,54 @@ user.posts << post
 Then we can find the user and their posts:
 user = User.find(1)
 user.posts
+
+
+Notes from class 1/29/24
+
+In the Gemfile we see
+gem "sqlite3", "~> 1.4"
+
+Often in production we'll use PostgreSQL
+
+Any table we create will go in the db/schema.rb file
+
+When we created the Post model with user:references, in the migration file, it sets up the foreign key
+t.references :user, null:false, foriegn_key: true
+
+User.first
+will get the first user
+
+profile = Profile.create(user: user, bio: "this is my bio")
+We can use the user object that we've previously stored in the user variable (in the rails console).
+
+user.profile
+This will return the profile attached to our user.
+
+Or can use Profile = User.first.profile.create
+
+And in later lessons we'll create these simultaneously: User.create(user_params)
+
+In the User model:
+
+after_create :create_profile
+
+create_profile is predefined.
+
+In the rails console we can use the command reload! to update the console
+
+Then when we create a user it'll INSERT INTO users and INSERT INTO profiles
+
+We have to use has_many :blogs to set up the association between the user and the blogs.
+
+user = User.first
+blog1 = Blog.create(user: user, title: "This is my first blog", content: "Lorem ipsum")
+
+user.blogs
+[using rails plurals]
+
+
+
+If when creating a new User (like User.create without any arguments when we have validations on the attributes) we get nil for the id, the created_at and the updated_at, that means it didn't actually get created.
+If we do User.all, it won't list that user.
+Rails will not save the record to the database if it doesn’t meet the validations, and the object returned by User.create will not be persisted. However, it will still exist in memory with the attributes that were provided, even if they were null or invalid.
+
