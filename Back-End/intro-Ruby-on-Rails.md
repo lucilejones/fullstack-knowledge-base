@@ -455,4 +455,174 @@ limit - limit the number of records
 offset - offset the number of records
 
 
+Validations
+-used to validate data and enforce business rules
+
+We can enforce validations at database level, model level, and on the frontend.
+
+Database level: most basic level
+Model level: most common level
+
+Having both offers multiple layers of security. Database-level act as a final safeguard, while model=level provide a more user-friendly and flexible option.
+Model-level might not be enough, however, when multiple applications interact with the same database and each application might have different validation rules.
+Frontend validations also help reduce unnecessary server requests. 
+
+Adding validations to the User model.
+In the app/models/user.rb file:
+class User < ApplicationRecord
+  validates :name, presence: true
+  validates :email, presence: true, uniqueness: true
+end
+
+validates :name, presense: true
+This validates the name attribute; it takes two arguments - the name of the attribute and the validation rule. In this case, we use the presence validation rule, saying the attribute must be present. It cannot be nil or an empty string.
+
+validates :email, presence: true, uniqueness: true
+This has multiple validations: the email attribute needs to be present and needs to be unique.
+
+We can create a new user with:
+User.create(name: "jimmy james", email: "jimmyjames@gmail.com")
+
+If we try to create another user with the same email, we'll get an error.
+If we try to create a new user without a name, we'll get an error.
+
+
+Other examples of model validators:
+
+validates :email, format: { with: URI::MailTo::EMAIL_REGEXP }
+-checks if the value of an attribute matches a given regular expression.
+
+validates :username, length: { minimum: 5, maximum: 20 }
+-ensures the length of the attribute's value is within a specified range
+
+validates :age, numericality: { greater_than: 0 }
+-ensure's the attribute's value is anumber, and can validate whether it's greater than, less than, equal, to, odd, even, etc
+
+validates :status, inclusion: { in: %w[pending approved rejected] }
+-validates the value of the attribute is included in or excluded from a given set.
+
+validates :notes, absence: true
+-validates the specified attributes are empty or null
+
+validates :password, confirmation: true
+-used mainly for passwords and emails, ensuring the two text fields receive exactly the same content
+
+validates :terms_of_service, acceptance: true
+-checks if a checkbox (like terms of service) is checked.
+
+
+Custom Model Validators
+In the User model, we can add:
+class User < ApplicationRecord
+  validate :name_cannot_contain_numbers
+
+  def name_cannot_contain_numbers
+    if name.match(/\d/)
+      errors.add(:name, "cannot contain numbers")
+    end
+  end
+end
+
+We give a name to our custome validator (:name_cannot_contain_numbers), and then define that method below. If the name attribute contains numbers, we add an error to the name attribute.
+
+
+Callbacks
+-used to exectue code before or after certain events.
+-example: we can send an email after a user is created. Or update a user's profile after they log in.
+
+Before or after certain events: this is the most basic type.
+Before or after certain actions: this is the most common type. 
+
+Before callbacks act as a final sadeguard ensuring data integrity; while after callbacks provide a user=friendly and flexible way to execute code.
+
+Example of a before callback:
+class User < ApplicationRecord
+  validates :name, presence: true
+  validates :email, presence: true, uniqueness: true
+
+  before_create :downcase_email
+
+  private
+
+  def downcase_email
+    self.email = email.downcase
+  end
+end
+
+We're using before_create which means the method will be called before the record is created. In this case, the email wil be downcased before the record is created. 
+
+We can create a new user:
+User.create(name: "Avery Ivery", email: "aVeRyIvery");
+
+We know the email will be downcased before the record is created.
+
+An example of an after callback:
+User.last.email
+
+
+
 # Intro to Associations
+
+Associations are used to define relationships between models.
+Example: we can define a one-to-one relationship between a user and a profile.
+We can define a one-to-many relationshipe between a user and a post.
+
+Using Active Record makes this really easy. We follow the naming convention and Rails takes care of the rest.
+
+one-to-one: most basic (user to profile)
+one-to-many: most commone (user to post)
+many-to-many: most complex (between a user and a group)
+polymorphic: most advanced - we can set up a single model that can belong to more than one model, using a single association (a comment can be associated with post or video)
+self-join: most advanced (we can define a self-join relationship between a user and a friend)
+
+
+One-to-one: belongs to and has one associations
+
+We can add has_one association to our User model.
+We have a user table, and we need to create a profile table.
+We can run:
+rails generate model Profile user:references bio:text
+
+Profile - the name of the model
+
+user:references - the type of the attribute; used to define a one-to-one relationship between two models. Here we're using the references type, meaning the attribute will be a reference to another model. We're referencing the User model. This will create a user_id column in the profiels table.
+
+bio:text - the name of the attribute and type.
+
+This will create a model file under app/models/profile.rb and a migration file under db/migrate.
+
+In the profile.rb file
+class Profile < ApplicationRecord
+  belongs_to :user
+end
+
+belongs_to :user - this method adds a belongs_to association. It takes two arguments, the name of the association and the options. In this case the profile belongs to a user. This will create a user method that returns the user associated with the profile.
+
+Then we run the migration file to create the table in the database:
+rails db:migrate
+
+In the user.rb file we'll add the following code:
+class User < ApplicationRecord
+  validates :name, presence: true
+  validates :email, presence: true, uniqueness: true
+
+  before_create :downcase_email
+
+  has_one :profile
+
+  private
+
+  def downcase_email
+    self.email = email.downcase
+  end
+end
+
+has_one :profile - this method adds a one-to-one relationship. It takes two arguments, the name of the association and the options. In this case, we're using the has_one association meaning the user has one profile. This will create a profile method that returns the profile associated with the user.
+
+Now we can create a new user with a profile:
+user = User.create(name: "James Underway", email: "james_underway@gmail.com", profile: Profile.new(bio: "I am a software engineer"))
+
+
+One-to-many: belongs to and has many associations
+
+
