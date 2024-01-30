@@ -441,6 +441,13 @@ SELECT * FROM users WHERE name = "John Doe"
 To find users with a specific name and email:
 User.where(name: "John Doe", email: "johndoe@gmail.com")
 
+From Amanda (and Tyler):
+Product.where('price > ?', 3).destroy_all
+https://www.rubyguides.com/2019/07/rails-where-method/
+https://www.altcademy.com/blog/what-is-object-relational-mapping-orm-in-ruby-on-rails/
+https://guides.rubyonrails.org/active_record_querying.html#conditions
+
+
 
 Other model class methods:
 find_by - find a record by a specific attribute
@@ -509,6 +516,8 @@ validates :password, confirmation: true
 
 validates :terms_of_service, acceptance: true
 -checks if a checkbox (like terms of service) is checked.
+
+https://edgeguides.rubyonrails.org/active_record_validations.html#numericality
 
 
 Custom Model Validators
