@@ -249,3 +249,113 @@ user1.friends
 
 
 # Controllers and Routes
+
+Controllers
+-the middlepeople between models and views
+-responsible for processing requests and sending responses
+-also responsible for handling the logic of the app
+
+Routes
+-responsible for mapping URLs to the controller actions
+-a controller action is a method defined in the controller's class
+
+We can creat a User model and then run the migration:
+rails g model User name:string email:string
+
+rails db:migrate
+
+Then we create a users controller:
+rails g controller Users
+
+This creates a controller file in the app/controllers/users_controller.rb
+We'll add the following code:
+class UsersController < ApplicationController
+end
+
+This file is where we'll add actions.
+Actions are methods defined in the controller, responsible for handling requests and sending responded.
+
+We'll add an action called create (with the logic to create a new user with the name and email passed in as parameters):
+class UsersController < ApplicationController
+  def create
+    user = User.new(name: params[:name], email: params[:email])
+    if user.save
+      render json: user
+    else
+      render json: { error: "Unable to create user." }
+    end
+  end
+end
+
+[in one place in the notes the user variable had an @ in front; in another place it didn't]
+
+The params hash contains all the parameters that are passed in from the request.
+Example: if we make a POST request with these parameters:
+{
+	"name": "John",
+	"email": "johndoe123@gmail.com"
+}
+The params hash will look like this:
+{
+  name: "John",
+ email: "johndoe123@gmail.com"
+}
+
+render
+-method used to render a view or a resource as JSON
+
+redirect_to
+-method used to redirect to a different route
+
+request
+-method used to access the request object
+
+[and other methods provided by ApplicationController]
+
+new
+-method provided by ActiveRecord; will fill attributes of the record but won't save until we call the save method
+
+Then we check to see if the user was saved. If it was, we render the user as JSON; if it wasn't, we render an error message as JSON.
+(This is the typical pattern: if an action is successful, render the resource as JSON; if the action was not successful, render an error message as JSON.)
+
+Next we add a route to the routes file.
+config/routes.rb:
+Rails.application.routes.draw do
+  resources :users
+end
+
+The resources method, provided by Rails, creates routes for a resource.
+The following routes will get created:
+| HTTP Verb | Path       | Controller#Action | Used for                    |
+| --------- | ---------- | ----------------- | --------------------------- |
+| GET       | /users     | users#index       | display a list of all users |
+| POST      | /users     | users#create      | create a new user           |
+| GET       | /users/:id | users#show        | display a specific user     |
+| PATCH/PUT | /users/:id | users#update      | update a specific user      |
+| DELETE    | /users/:id | users#destroy     | delete a specific user      |
+
+Controller#ACtion is the controller and action used to handle the request.
+
+In the routes file, we can specify the only action we'd like to use:
+Rails.application.routes.draw do
+  resources :users, only: [:create]
+
+Then we can start up our Rails server with the following command:
+rails s
+
+
+Then we can set up a collection in Postman to test our API.
+
+rails-postman-test
+
+The first request is create user, the url will be http://localhost:3000/users
+This is a POST request.
+In the Body tab, we select raw and JSON, then pass in a JSON object:
+{
+  "name": "Jane Doe",
+  "email": "Janedoe123@email.com"
+}
+
+After hitting send, we should get a response object back with an id, name, email, created_at, and updated_at.
+
+
