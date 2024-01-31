@@ -359,3 +359,168 @@ In the Body tab, we select raw and JSON, then pass in a JSON object:
 After hitting send, we should get a response object back with an id, name, email, created_at, and updated_at.
 
 
+Index
+-the index action displays a list of all users.
+
+In the users controller:
+class UsersController < ApplicationController
+  def index
+    @users = User.all
+    render json: @users
+  end
+
+  def create
+    @user = User.new(name: params[:name], email: params[:email])
+    if @user.save
+      render json: @user
+    else
+      render json: { error: "Unable to create user." }
+    end
+  end
+end
+
+Then we need to add a route to the routes file:
+Rails.application.routes.draw do
+  resources :users, only: [:create, :index]
+end
+
+Each action name is tied to a route name.
+
+To trigger the index action, we'll make a GET request to the /users route.
+
+
+Show
+-the show action gets a specific user
+
+In the users controller:
+class UsersController < ApplicationController
+  def index
+    @users = User.all
+    render json: @users
+  end
+
+  def show
+    @user = User.find(params[:id])
+    render json: @user
+  end
+
+  def create
+    @user = User.new(name: params[:name], email: params[:email])
+    if @user.save
+      render json: @user
+    else
+      render json: { error: "Unable to create user." }
+    end
+  end
+end
+
+Here we find a user by the id passed in as a parameter.
+
+We'll add the route to the routes file:
+Rails.application.routes.draw do
+  resources :users, only: [:create, :index, :show]
+end
+
+To trigger the show action we'll make a GET request to /users/:id
+
+In Postman our GET request will go to http://localhost:3000/users/1
+
+
+Put
+-the put action updates a specific user
+
+In the user controller:
+class UsersController < ApplicationController
+  def index
+    @users = User.all
+    render json: @users
+  end
+
+  def show
+    @user = User.find(params[:id])
+    render json: @user
+  end
+
+  def create
+    @user = User.new(name: params[:name], email: params[:email])
+    if @user.save
+      render json: @user
+    else
+      render json: { error: "Unable to create user." }
+    end
+  end
+
+  def update
+    @user = User.find(params[:id])
+    if @user.update(name: params[:name], email: params[:email])
+      render json: @user
+    else
+      render json: { error: "Unable to update user." }
+    end
+  end
+end
+
+Here we find a user with the id passed in as a parameter and then update that user with the name and email passed in as parameters.
+
+Updating the routes file:
+Rails.application.routes.draw do
+  resources :users, only: [:create, :index, :show, :update]
+end
+
+In Postman we'll send a PUT request to http://localhost:3000/users/1
+
+And in the Body tab, we select raw and JSON:
+{
+  "name": "Jennifer Doe",
+  "email": "newjenndoe@email.com"
+}
+
+
+Destroy
+-the destroy action deletes a specific user
+
+In the users controller:
+class UsersController < ApplicationController
+  def index
+    @users = User.all
+    render json: @users
+  end
+
+  def show
+    @user = User.find(params[:id])
+    render json: @user
+  end
+
+  def create
+    @user = User.new(name: params[:name], email: params[:email])
+    if @user.save
+      render json: @user
+    else
+      render json: { error: "Unable to create user." }
+    end
+  end
+
+  def update
+    @user = User.find(params[:id])
+    if @user.update(name: params[:name], email: params[:email])
+      render json: @user
+    else
+      render json: { error: "Unable to update user." }
+    end
+  end
+
+  def destroy
+    @user = User.find(params[:id])
+    if @user.destroy
+      render json: { message: "Successfully deleted user." }
+    else
+      render json: { error: "Unable to delete user." }
+    end
+  end
+end
+
+Then in the routes file, since we aren't excluding any, we can take out the only option:
+Rails.application.routes.draw do
+  resources :users
+end
+
