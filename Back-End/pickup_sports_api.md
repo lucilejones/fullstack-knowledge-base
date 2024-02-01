@@ -102,3 +102,43 @@ We're saying the username needs to match or be similar to this Regex expression.
 errors is a pre-built property that exists on the instance itself. 
 We user errors.add followed by the column that has errors, in this case the username, as the first argument, and then the message.
 
+# one to many relationship
+has_many association, belongs_to associate, User and Posts
+A user can have many posts and a post belongs to a user.
+
+rails g model Post user:references content:text
+
+the user:references creates a foreign key that points to the user 
+text can hold more characters than a string type
+
+Then we run rails db:migrate
+This will update our schema file.
+
+The post.rb model file will include
+belongs_to :user
+
+This creates a method user on top of a Post instance that will find the user by the user_id.
+
+We want to also include validations
+validates :content, presence: true, length: {maximun: 2000}
+
+Then we can create a post:
+Post.create(content: "This is a post", user_id: 1)
+
+Then we can use User.find(1).user and it will give back the user information for that user connected to that post.
+
+If we want to get the user's posts, we have to add the association to the user model:
+has_many :posts
+
+Then we can do User.find(1).posts 
+
+Post.new vs Post.create
+create will automatically try to save to the database, while new doesn't save it in the database yet. We'd then need to do post.save (if we'd saved it in a variable post).
+
+Or we can do user.posts << post
+(if we didn't already put a user_id when we set up the new post)
+
+We're referencing the User saved in the user variable and (using the shovel operator) pushing the new post into the array of that user's posts.
+
+# one to one relationship
+has_one association, belongs_to association - User and profile
