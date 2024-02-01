@@ -614,3 +614,26 @@ class BlogsController < ApplicationController
 end
 
 We can run rails routes --extended to print out the routes
+
+# notes from exercises
+generating a new migration file (to add an age attribute to the users table):
+rails generate migration add_age_to_users age:integer
+
+Then the migration file:
+class AddAgeToUsers < ActiveRecord::Migration[7.1]
+  def change
+    add_column :users, :age, :integer
+  end
+end
+
+run rails db:migrate
+
+generating a new migration file (to change name to full_name):
+rails g migration rename_name_to_full_name
+
+Then in the migration file:
+  def change
+    rename_column :users, :name, :full_name
+  end
+
+Then run rails db:migrate

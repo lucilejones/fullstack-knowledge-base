@@ -142,3 +142,14 @@ We're referencing the User saved in the user variable and (using the shovel oper
 
 # one to one relationship
 has_one association, belongs_to association - User and profile
+
+A user can have just one profile and a profile belongs to a user.
+
+rails g model Profile user:references bio:text
+
+The Profile model will have belongs_to :user
+(this will be set up when the model file gets created)
+
+We run rails db:migrate
+
+We need to add has_one :profile to the User model
