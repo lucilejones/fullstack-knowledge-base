@@ -524,3 +524,93 @@ Rails.application.routes.draw do
   resources :users
 end
 
+
+# notes from class 2/1/24
+association - ability to create relationships in the context of Ruby on Rails; through the different models
+
+controllers (and the action) are responsible for receiving requests and then if needed they can access the database, and then sending a response
+
+We map requests through routes
+
+RESTful routing: encourages a common way to get info, convention for naming paths for GET, POST, PUT, DELETE requests. A standardization.
+
+
+With the command rails g model Category name:string
+This will create a migration file to create a table called categories with a column called name.
+
+has_and_belongs_to_many doesn't need a third model
+
+rails g migration CreateJoinTableBlogCategory blog category
+
+this will target two models, blog and category, and will create a join table for blogs and categories. (This command needs to be in alphabetical order.)
+
+In order for the models to access that relationship we need to establish an association.
+We'll configure this in the Blog model and the Category model
+has_and_belongs_to_many :categories
+has_and_belongs_to_many :blogs
+
+has_many :through does need a third model
+
+
+MVC - model, view, controller
+the user sends a request
+the controller formats the request
+the model queries the databse, then sends a resonse back to the controller
+then the response is projected back to the user
+
+
+Routes
+
+config/routes.rb:
+Rails.application.routes.draw do
+  resources :blogs
+end
+
+We use the resources keyword to set up the path for CRUD operations.
+Then we need to define methods in the controller.
+We need to create a controller called blogs.
+rails g controller blogs
+
+This will create a blogs_controller.rb file in the controllers folder, and then we need to define the different methods (index, show, create, update, delete):
+class BlogsController < ApplicationController
+  #GET /blogs
+  def index
+    blogs = Blog.all
+
+    render json: blogs, status: :ok
+  end
+
+  #GET /blogs/:id
+  def show
+    id = params[:id]
+    blog = Blog.find(id)
+
+    render json: blog, status: :ok
+
+  #POST /blogs
+  def create
+    user_id = params[:user_id]
+    title = params[:title]
+    content = params[:content]
+
+    blog = Blog.new(user_id: user_id, title: title, content: content)
+
+    if blog.save
+      render json: blog, status: :ok
+    else
+      render json: blog.errors.full_messages, status: :unprocessable_entity
+    end
+  end
+
+  #PUT /blogs/:id
+  def update
+
+  end
+
+  #DELETE /blogs/:id
+  def destroy
+
+  end
+end
+
+We can run rails routes --extended to print out the routes
