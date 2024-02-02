@@ -323,3 +323,93 @@ end
 By default in each action we have access to all the models. (We don't have to import anything into this file.)
 
 # Resources - show action
+To get one specific user:
+
+In the routes.rb file:
+get '/users/:id', to: 'users#show'
+
+Then in the users_controller file:
+def show
+    user = User.find(params[:id])
+
+    render json: user, status: 200
+end
+
+# Resources - create action
+To create a new user:
+
+In he routes.rb file:
+post '/users', to: 'users#create'
+
+Then in the users_controller file:
+def create
+    user = User.new(user_params)
+
+    if user.save
+        render json: user, status: :created
+    else
+        render json: user.errors, status: :unprocessable_entity
+    end
+end
+
+private
+
+def user_params
+    params.require(:user).permit(:username, :email, :first_name, :last_name)
+end
+
+# Resources - update action
+In the routes.rb file:
+put 'users/:id', to: 'users#update'
+
+In the users_controller.rb file:
+def update
+    user = User.find(params[:id])
+
+    if user.update(user_params)
+        render json: user, status: :ok
+    else
+        render json: user.errors, status: :unprocessable_entity
+    end
+end
+
+Because we have repeated code in the show and update functions, we can define another private method called set user.
+
+def set_user
+    @user = User.find(params[:id])
+end
+
+We define an instance variable in which we set this to the User.find.
+Then we execute that method before executing the update action or the show action.
+At the very top of the controller file, we execute a method before_action (but only for the show and the update)
+
+before_action :set_user, only: [:show, :update]
+
+In order to make variables accessible between actions, we need to use the @
+
+if @user.update(user_params)
+    render json: @user, status: :ok
+else
+    render json: @user.errors, status: :unprocessable_entity
+end
+
+# Resources - destroy action
+In the routes.rb file:
+delete '/users/:id', to: 'users#destroy'
+
+In the users_controllers.rb file:
+(we need to add the :destroy method to the before_action method)
+def destroy
+    if @user.destroy
+        render json: nil, status: :ok
+    else
+        render json: @user.errors, status: :unprocessable_entity
+    end
+end
+
+We might want better error message for the delete, like why the resource couldn't be deleted.
+
+
+# nested routes - getting user posts
+
+# post resource - create, update, and destroy
