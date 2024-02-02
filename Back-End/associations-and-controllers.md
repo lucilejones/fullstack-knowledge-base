@@ -100,7 +100,7 @@ has_and_belongs_to_many
 (makes the association directly)
 -when a record in a table can belong to many records in another table; this association does not require a third model.
 example: an application includes many assemblies and parts, with each assembly having many parts and each part appearing in many assemblies.
--this setup makes sense if we don't need to work with the relationshipw model as an independent entity (though we do need to create the joining table in the database)
+-this setup makes sense if we don't need to work with the relationship model as an independent entity (though we do need to create the joining table in the database)
 
 rails g model Author name:string
 rails g model Book title:string
@@ -144,7 +144,7 @@ author.books << book
 
 
 polymorphic
--when a record in a table can belong to more than one record from other tables; a model can belong to more than one other model, on a sigle association
+-when a record in a table can belong to more than one record from other tables; a model can belong to more than one other model, on a single association
 example: a comment can belong to a post or a comment can belong to a photo
 example: a picture model belongs to either an employee model or a product model
 

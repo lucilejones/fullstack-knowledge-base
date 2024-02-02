@@ -153,3 +153,143 @@ The Profile model will have belongs_to :user
 We run rails db:migrate
 
 We need to add has_one :profile to the User model
+
+# polymorphic
+When a record in a table can belong to more than one record in other tables.
+
+The Comment table gets a UniqueId (prmiary key), UserID (foreign key), Content, CommentableID (which will come from the post or event it's associated with), and CommentableType (this will let us know if it's associated with the post or event).
+
+rails g model Comment user:references commentable:references{polymorphic} content:text
+(This will create the migration file)
+
+rails db:migrate
+(When we run this migration it updates the schema with the comments table; it will create the columns for the commentableID and the commentableType)
+
+Then in the User model:
+mas_many :comments, dependent: :destroy
+(A choice we can make: when the user is deleted, these will be deleted)
+(We can do this with the posts and profile also, but need to be careful with this code.)
+
+When Rails set up the Comment model, it comes with the following code:
+class Comment < ApplicationRecord
+  belongs_to :user
+  belongs_to :commentable, polymorphic: true
+end
+
+Then we need to set up the Post model (and Event model) correctly.
+has_many :comments, as: :commentable
+
+Then we run rails console
+
+user = User.first
+user.comments (at first will return an empty array)
+
+post = Post.first
+
+user.comments.create(commentable: post, content: "This is a comment")
+[user.comments is an array, but it also comes with methods, like .create()]
+
+
+We'll do the same process for Location - this can be connected to User or Event.
+
+rails g model Location locationable:references{polymorphic} zip_code:string city:string state:string country:string address:string
+
+Then rails db:migrate
+
+Then in the user.rb file we set
+has_one :location, as: :locationable
+
+[we could also add come validations to the Location model]
+
+rails console
+user = User.first
+Location.create(locationable: user)
+
+user.location
+
+# many to many relationship
+has_many :through association - Evants and Users
+
+rails g model Event user:references content:text start_date_time:datetime end_date_time:datetime guests:integer
+
+Then rails db:migrate
+
+In the Event model we'll add:
+validates :start_date_time, :end_date_time, :guests, presence: true
+
+has_one :location, as: :locationable, dependent: :destroy
+has_many :comments, as: :commentable, depended: :destroy
+
+Then we need to make the association with the User. (In the model)
+
+has_many :events
+
+Then in the rails console:
+user = User.first
+user.events.create(guests: 5, start_date_time: DateTime.now, end_date_time: DateTime.now + 1.day)
+
+event = Event.first
+Then we can check event.comments and event.location
+
+In order for the event to have many participants (users), the Event_Participant table will keep track of which users are particpating in which event and which event has which participants.
+
+rails g model EventParticipant user:references event:references rating:integer
+
+In the event.rb we include:
+has_many :event_participants
+has_many :users, through: :event_participants
+
+Then in the user.rb file:
+has_many :event_participants
+has_many :events, through: :event_participants
+
+Then we can grab all the EventParticipants with a specific user id which will also grab the event by that user id.
+
+rails console
+
+user = User.first
+event = Event.create(start_date_time: DateTime.now, end_dat_time: DateTime.now + 1.day, user:user, guests: 5)
+
+user.events will get an error
+We need to set it up so we can get both the list of events the user is participating in and also separately the list of events the user has created.
+has_many :created_events, class_name: 'Event', foreign_key: 'user_id'
+
+At this point, we'd forgotten to run rails db:migrate
+
+user.events will be all the events that user is participating in (accessed through the event_participants)
+user.created_events will be all the events that user is associated with directly (that they created)
+
+EventParticipant.create(user: user, event: Event.first)
+Event.first.users
+
+# many to many relationships
+has_and_belongs_to_many association - Events and Sports
+
+A sport can have many events and an event can have many sports.
+We'll use EventSport as a join table.
+We might want an even to have many sports, or to filter events by sports.
+
+Previously, we created a third model EventParticipant, but we won't create a separate model for the EventSport; we don't need it.
+
+rails g model Sport name:string
+rails g migration CreateJoinTableEventSport event sport
+
+We need to uncomment the two lines of code in the migration file and then run rails db:migrate
+
+In the Sport model, we add:
+validates :name, presence: true
+
+has_and_belongs_to_many :events
+
+This assumes there's a third table events_sports (which has to be in alphabetical order) which will include a sport_id as a foreign key.
+
+In the Event model:
+has_and_belongs_to_many :sports
+
+rails console
+event = Event.first
+event.sports
+
+sport = Sport.create(name: "basketball")
+event.sports << sport
+event.sports
