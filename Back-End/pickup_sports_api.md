@@ -293,3 +293,33 @@ event.sports
 sport = Sport.create(name: "basketball")
 event.sports << sport
 event.sports
+
+# introduction to controllers, routes, resources, and postman - Index action
+In the config/routes.rb file:
+We define the routes we can send requests to.
+Rails.application.routes.draw do
+  get '/users', to: 'users#index'
+end
+
+We use the to keyword to say which specific controller is going to handle this request.
+A controller is the intermediary between the database and the requestor.
+The users controller is going to handle this request and the action that will be triggered is called index.
+
+In the terminal we run:
+rails g controller users index
+
+This creates a file in app/controllers/users_controllers.rb
+
+rails s 
+Will start the server.
+
+Then we define the index action in the UsersController
+def index
+    users = User.all
+
+    render json: users, status: 200
+end
+
+By default in each action we have access to all the models. (We don't have to import anything into this file.)
+
+# Resources - show action
