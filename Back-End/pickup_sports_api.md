@@ -412,4 +412,43 @@ We might want better error message for the delete, like why the resource couldn'
 
 # nested routes - getting user posts
 
+If we put (in the routes.rb file):
+resources :users
+
+Rails will automatically define the index, show, create, and destroy functionality.
+We don't have to necessarily define those routes ourselves.
+
+We can include additional information on the routes (for example, to get the posts)
+
+get '/users/:id/posts', to : 'users#posts_index'
+
+Then we need to define that in the users_controller.rb file:
+(We include :posts_index at the top in the before_action - since we're using the @user from the set_user method)
+def posts_index
+    user_posts = @user.posts
+
+    render json: user_posts, status: :ok
+end
+
+We can also define the custom routes in a code block. That will allow us to write less code:
+resources :users do
+    get 'posts', to: 'users#posts_index'
+end
+
+However, it creates a problem because it makes the path /users/user_id/posts.
+user_posts = @user.posts will no longer work
+So we'll define the user in the posts_index function (instead of using @user):
+def posts_index
+    user = User.find(params[:user_id])
+    user_posts = @user.posts
+
+    render json: user_posts, status: :ok
+end
+
+So we need to take :posts_index out of the before_action.
+
+The to set up our routes for the posts:
+
+resources :posts
+
 # post resource - create, update, and destroy
