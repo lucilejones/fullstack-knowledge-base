@@ -450,5 +450,30 @@ So we need to take :posts_index out of the before_action.
 The to set up our routes for the posts:
 
 resources :posts
+(This will set up the routes for index, create, show, update, destroy)
 
 # post resource - create, update, and destroy
+
+Then we need to define the methods. (For now we'll hold off on defining the index and show methods. These are going to be a litte more complicated.)
+
+We need to create a controller file for the posts:
+rails g controller posts
+
+Then we can copy the code from the users_controller file and paste into the posts_controller file. But we'll need to switch all the user variables to post.
+(right click on user and change occurances)
+
+We'll delete the index and show methods, and the posts_index method.
+
+We also need to permit different params (in the post_params method):
+(we also don't need to require - that's mainly for the fullstack Ruby on Rails)
+
+def post_params
+    params.permit(:content, :user_id)
+end
+
+We also need to remove :show from the before_action
+
+In the routes.rb file we want only:
+  resources :posts, only: [:create, :update, :destroy]
+
+
