@@ -125,7 +125,7 @@ validates :content, presence: true, length: {maximun: 2000}
 Then we can create a post:
 Post.create(content: "This is a post", user_id: 1)
 
-Then we can use User.find(1).user and it will give back the user information for that user connected to that post.
+Then we can use Post.find(1).user and it will give back the user information for that user connected to that post.
 
 If we want to get the user's posts, we have to add the association to the user model:
 has_many :posts
@@ -420,7 +420,7 @@ We don't have to necessarily define those routes ourselves.
 
 We can include additional information on the routes (for example, to get the posts)
 
-get '/users/:id/posts', to : 'users#posts_index'
+get '/users/:id/posts', to: 'users#posts_index'
 
 Then we need to define that in the users_controller.rb file:
 (We include :posts_index at the top in the before_action - since we're using the @user from the set_user method)
@@ -440,7 +440,7 @@ user_posts = @user.posts will no longer work
 So we'll define the user in the posts_index function (instead of using @user):
 def posts_index
     user = User.find(params[:user_id])
-    user_posts = @user.posts
+    user_posts = user.posts
 
     render json: user_posts, status: :ok
 end
