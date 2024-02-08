@@ -337,3 +337,76 @@ end
 Factories allow us to define a common setup for creating objects. We define it once in a factory and then reuse it across multiple tests.
 They also abstract away the complexities of object creation and allow tests to be cleaner and more focused on the behavior being tested rather than the setup.
 
+before { get '/posts' } - we're making a GET request to the /posts endpoint
+
+in the it method:
+we're expecting the response to have a status of 200, to not be empty, and to have a size of 10.
+
+In the other test we're expecting the response to have a title and content.
+
+
+We can add a test for the GET /posts/:id endpoint:
+  describe 'GET /posts/:id' do
+    let!(:post) { create(:post) }
+
+    before { get "/posts/#{post.id}" }
+
+    it 'returns the post' do
+      expect(response).to have_http_status(200)
+      expect(json).not_to be_empty
+      expect(json['id']).to eq(post.id)
+    end
+
+    it 'should have the correct structure' do 
+      expect(json).to include('title', 'content')
+    end 
+    
+  end
+
+In the config/routes.rb:
+resources :posts
+
+In the PostsController:
+  def index 
+    render json: Post.all
+  end
+
+  def show 
+    post = Post.find(params[:id])
+
+    if post 
+      render json: post, status: :ok 
+    else 
+      render json: {messages: 'not found'}, status: :not_found
+    end
+  end
+
+
+Creating a test for the PUT /posts/:id endpoint
+
+
+Creating a test for the DELETE /posts/:id endpoint
+
+
+# Faker
+We can install the Faker gem to generate fake data based off different categories.
+
+In the Gemfile:
+gem 'faker'
+
+Then include in the rails_helper file:
+require 'spec_helper'
+require 'faker'
+
+Then run bundle install 
+
+We can update the post factory to use the faker gem (in the spec/factories/posts.rb file):
+FactoryBot.define do
+  factory :post do
+    title { Faker::Lorem.sentence }
+    content { Faker::Lorem.paragraph }
+  end
+end
+
+
+# Refactoring
