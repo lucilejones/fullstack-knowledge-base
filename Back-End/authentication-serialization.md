@@ -180,10 +180,92 @@ Then if we run our tests, we should expect them to fail:
 bundle exec rspec
 
 We need to create our models and controllers.
+rails generate model User username:string password_digest:string
+
+Enter n to not overwrite the spec file.
+
+rails db:migrate
+
+Then we add has_secure_password to the User model.
+class User < ApplicationRecord
+  has_secure_password
+end
+
+Then if we run the test file we get 3 examples with 3 failures.
+bundle exec rspec spec/models/user_spec.rb
+
+We need to add validates :username, presence: true to the user.rb file
+
+We also need to add bcrypt to our Gemfile
+
+gem 'bcrypt'
+bundle install
+
+Then try the test again:
+bundle exec rspec spec/models/user_spec.rb
+We get 3 examples, 0 failures
+
+Next, we'll create our user controller:
+rails g controller users
+
+In the app/controllers/users_controller.rb file:
+class UsersController < ApplicationController
+  def create
+    user = User.new(user_params)
+    if user.save
+      render json: user, status: :created
+    else
+      render json: user.errors, status: :unprocessable_entity
+    end
+  end
+
+  private
+
+  def user_params
+    params.permit(:username, :password, :password_confirmation)
+  end
+end
+
+When we use User.new or User.create with has_secure_password (in the User model), Rails automatically checks to see whether the password and password_confirmation fields match when creating a new user.
+
+Then in our routes file we add:
+Rails.application.routes.draw do
+  resources :users, only: [:create]
+end
+
+Then we run our test:
+bundle exec rspec spec/requests/users_spec.rb
+[the notes say at this point we should get 2 examples, 0 failures, but mine gets a fail for the first test]
+
+Create a sessions controller:
+rails g controller sessions create
+
+In the app/controllers/sessions_controller.rb file:
+class SessionsController < ApplicationController
+  def create
+    user = User.find_by(username: params[:username])
+    if user&.authenticate(params[:password])
+      render json: { token: '123' }
+    else
+      render json: { error: 'Invalid username or password' }, status: :unauthorized
+    end
+  end
+end
+
+user&
+The & is called the safe navigation operator. It's a Ruby operator that allows us to call a method on an object without worrying if it is nil. If the object is nil, the method will return nil instead of raising and exception.
+Here, if the user is found and the password is correct, we'll return a token. Otherwise, we'll return an error message.
+
+In our routes file we add:
+post '/login', to: 'sessions#create'
+
+Then we run our test file:
+bundle exec rspec spec/requests/sessions_spec.rb
 
 
 
 # Authorization in Rails
+# Creating a JSON Web Token using the JWT gem
 
 
 # Serialization in Rails using blueprinter
