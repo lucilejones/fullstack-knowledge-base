@@ -52,7 +52,7 @@ Then we run (installs the gem files):
 bundle install
 
 Then we run (generates the RSpec configuration files):
-rails generate rspec: install
+rails generate rspec:install
 
 This will generate the following files:
 create  .rspec
@@ -394,7 +394,7 @@ We can install the Faker gem to generate fake data based off different categorie
 In the Gemfile:
 gem 'faker'
 
-Then include in the rails_helper file:
+Then include in the rails_helper.rb file:
 require 'spec_helper'
 require 'faker'
 
@@ -410,3 +410,81 @@ end
 
 
 # Refactoring
+
+
+
+
+# notes from class 2/8/2024
+if we run rails s it'll output
+application starting in development
+
+From Nolan:
+Faker is a way to retrieve data like names, emails, animals, or whatever to use for ourselves so our data isn’t just “test” or “testing again”
+Seeds are where we would write ruby code to seed our DB. If we had a DB with a User that has blogs, we could use the seed file to write the code that creates 100 users, each with 100 blogs. We use faker in the seed file to make this data realistic.
+
+rails generate rspec:install
+
+rspec vs bundle exec rspec
+bundle exec rspec - runs the specific version of rspec in your bundle in your project (rather than what might be installed globally)
+
+We add request test files when we want to test controllers. In the folder requests, we create a test file: blogs_spec.rb
+rails g rspec:request Blogs
+
+We can try out Faker methods in the rails console.
+Faker::Lorem.sentence
+Faker::Lorem.paragraph
+
+
+spec/factories/blogs.rb:
+FactoryBot.define do
+  factory :blog do
+    title { Faker::Lorem.sentence }
+    content { Faker::Lorem.paragraph_by_chars }
+  end
+end
+
+spec/factories/user.rb:
+FactoryBot.define do
+  factory :user do
+    email { Faker::Internet.email }
+    first_name { Faker::Name::first_name }
+    last_name { Faker::Name::last_name}
+    username { Faker::Internet.username }
+  end
+end
+
+In the rails_helper.rb file we need to include FactoryBot in the configure:
+RSepc.configure do |config|
+  config.include FactoryBot::Syntax::Methods
+...
+
+In the spec/requests/blogs_spec.rb file:
+require 'rails_helper'
+
+RSpec.describe "Blogs", type: :request do
+  describe "GET /blogs" do
+
+    let(:blog) { create(:blog) }
+    #this is using FactoryBot
+
+    it "returns http success" do
+      get '/blogs'
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'returns a list of blogs' do
+      get '/blogs'
+      expect(response.body).to eq(Blog.all.to_json)
+    end
+
+  end
+end
+
+To reduce redundancy, we can run some code before each request (like to do the get request).
+
+before do
+  blog
+  get '/blogs'
+end
+
+When declaring variables (with FactoryBot), we do need to call them.
