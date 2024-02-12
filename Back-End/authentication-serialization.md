@@ -266,6 +266,65 @@ bundle exec rspec spec/requests/sessions_spec.rb
 
 # Authorization in Rails
 # Creating a JSON Web Token using the JWT gem
+JWT (JSON Web Token) - a compact, URL-safe way of representing claims to be transferred between two parties. Claims are encoded as a JSON object that's used as the payload of a JSON web signmature (JWS) structure or as the plaintext of a JSON web encryption (JWE) structure. This lets the claims be digitally signed or integrity protected with a message authentication code (MAC) and/or encrypted.
+
+A JWT is made up of three parts, separated by dots:
+-header: typically consists of two parts: the type of token (which is JWT), and the signing algorithm being used (like HMAC SHA256 or RSA)
+{
+  "alg": "HS256",
+  "typ": "JWT"
+}
+
+-payload: contains the claims; claims are statements about an entity (typically, the user) and additonal data. There are three types of claims: registered, public, private
+{
+  "sub": "1234567890",
+  "name": "John Doe",
+}
+
+
+-signature: used to verify that the sender of the JWT is who they say they are, and to ensure the message wasn't changed along the way. To create the signature part we take the ecoded header, the encoded payload, a secret, the algorithm specified, and sign that.
+
+The resulting JWT looks like: xxxxx.yyyyy.zzzzz
+xxxxx is the Base64Url encoded header.
+yyyyy is the Base64Url encoded payload.
+zzzzz is the signature.
+
+Once a user is logged in, each sudsequent request will include the JWT - allowing the user access to routes, services, and resources that are permitted with that token.
+
+We'll be using the jwt gem
+
+Logging in a user and returning a JWT:
+We need to add gem 'jwt' to our Gemfile and the run bundle install
+
+In our sessions_controller.rb file, let's update the code to use the JWT gem to create a token:
+...
+  private 
+  
+  def jwt_encode(payload, exp = 24.hours.from_now)
+    payload[:exp] = exp.to_i
+    JWT.encode(payload, Rails.application.secrets.secret_key_base)
+  end
+
+This defines a private method that will encode our payload.
+
+def jwt_encode - we define a method that includes two parameters: payload and exp; the payload represents the data we want to include in out token (typically used for storing the user's id), and the exp is the expiration time of the token. We'll set it to 24 hours from now.
+
+payload[:exp] = exp.to_i - then we convert the expiration time to an integer. 
+
+JWT.encode - here we encode the payload using the JWT gem. We use the secret key base (which is unique to our application).
+
+The Rails object:
+-an instance of the Rails::Application class
+-created when the application boots and is available for our app to use
+-also available in the console
+-the container for our app's configuration, and the instance methods on the Rails object are the primary ways to configure our app
+
+With access to the Rails object, we have access to sensitive info about our app, such as the secret key base.
+The secret key base is unique to our app, is used for security purposes, and is used to encrypt sensitive data such as the Rails credentials feature (which is used to hold sensitive info like API keys, passwords, etc); we also use the secret key base to encode our payload.
+
+
+
+
 
 
 # Serialization in Rails using blueprinter
