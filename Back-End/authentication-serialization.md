@@ -328,3 +328,125 @@ The secret key base is unique to our app, is used for security purposes, and is 
 
 
 # Serialization in Rails using blueprinter
+
+
+
+
+# Notes from class 2/12/2024
+
+it 'hashes the password using BCrypt' do
+  user = create(:user, password: 'password')
+
+  expect(user.password_digest).to_not eq 'password'
+
+  expect(BCrypt::Password.new(user.password_digest)).to be_truthy
+
+  expect(Brypt::Password.new(user.password_digest).is_password?('password')).to be true
+end
+
+password_digest is how the database stores the password
+
+We add gem 'bcrypt' to the Gemfile, run bundle install
+
+add has_secure_password to the User model
+
+rails g migration AddPasswordDigestToUsers password_digest:string
+
+Then rails db:migrate
+
+Then in the spec/factories/users.rb we add:
+
+password { 'password' }
+password_confirmation { 'password' }
+
+These get added to a user when we have the has_secure_password attribute
+We can put those properties on a user, but they don't get stored in the database as password and password_confirmation, they get stored just as password_digest
+
+Then in the routes:
+resources :users, only: [:create]
+
+We generate a users controller:
+
+def create
+  user = User.new(user.params)
+  if user.save
+    render json: user, status: :created
+  else
+    render json: user.errors, status: :unprocessable entity
+  end
+end
+
+private
+
+def user_params
+  params.permit(:username, :email, :first_name, :last_name, :password, :password_confirmation)
+end
+
+rails routes --expanded
+(Can list our available routes in the console)
+
+
+Allowing users to login
+JSON Web Tokens
+
+We use a new controller called a sessions controller
+
+we add gem 'jwt' to the Gemfile and run bundle install
+
+To the routes file we add:
+post '/login', to: 'sessions#create'
+
+rails g controller Sessions create
+
+In the sessions_controller.rb file:
+def create
+  user = User.find_by(username: params[:username])
+
+  if user.authenticate(params[:password])
+    token = jwt_encode(user_id: user.id)
+    render json: { token: token }, status: :ok
+  else
+    render json: { error: "Unauthorized" }, status: :unauthorized
+  end
+end
+
+private
+
+def jwt_encode(payload, exp = 24.hours.from_now)
+  payload[:exp] = exp.to_i
+  JWT.encode(payload, Rails.application.secrets.secret_key_base)
+end
+
+Rails keeps secrete keys, API keys, etc very secure.
+
+
+Then in the applications_controller.rb we write a method to say which we endpoints we want a user to be authenticated in order to use:
+
+def authenticate_request
+  header = request.headers['Authorization']
+  header = header.split(' ').last if header
+
+  begin
+    decoded = JWT.decode(header, Rails.application.secrets.secret_key_base).first
+    @current_user = User.find(decoded['user_id'])
+  rescue JWT::ExpiredSignature
+    render json: { error: 'token expired' }, status: :unauthorized
+  rescue JWT::DecodeError
+    render json: { error: "Unauthorized" }, status: :unauthorized
+  end
+end
+
+Then we user the authenticated_request method before other methods where we want a user to be authenticated.
+
+In the BlogsController file:
+
+before_action :authenticate_request
+
+Now a user will need to be authenticated in order to use any of the blogs methods.
+
+In postman, we'll need to create a new user with a POST request. (With first_name, last_name, email, username, password, password_confirmation.)
+
+Then we do a POST request to /login with the username and password.
+We'll get a token back. (A long string.)
+Then for blogs requests we'll need to add the token to the headers.
+We click on Authorization, and use the Bearer Token. We paste the token into the Token field.
