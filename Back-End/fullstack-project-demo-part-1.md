@@ -281,3 +281,176 @@ end
 Then when we run the tests we should pass all of them.
 
 # Full stack overview
+We're using Ruby on Rails for the backend and Angular for the frontend.
+Our frontend app will be able to send requests to the backend app and the backend app will send responses to the frontend.
+We'll need to run both servers at the same time. Then we can sent requests in our local environment.
+To run the Rails API: rails s
+
+
+# Angular project setup
+We'll use Angular 17 for the frontend.
+run ng version
+[the notes recommend updating to version 17, but I read different opinions]
+[I stuck with 16 for this example project]
+
+ng new todo_list_frontend --no-strict
+
+Then we'll generate a model:
+ng g class models/todo
+
+export class Todo {
+	id: number = -1;
+	body: string = '';
+	is_completed: boolean = false;
+}
+
+Next we'll create a service for the todo list:
+ng g s service/todo
+
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { Todo } from '../models/todo';
+
+@Injectable({
+	providedIn: 'root',
+})
+export class TodoService {
+	private url = 'http://localhost:3000/todos';
+
+	constructor(private http: HttpClient) {}
+
+	getTodos(): Observable<Todo[]> {
+		return this.http.get<Todo[]>(this.url);
+	}
+
+	getTodoById(id: number): Observable<Todo> {
+		return this.http.get<Todo>(`${this.url}/${id}`);
+	}
+
+	createTodo(todo: { body: string; is_completed: boolean }): Observable<Todo> {
+		return this.http.post<Todo>(this.url, todo);
+	}
+
+	updateTodo(todo: Todo): Observable<Todo> {
+		return this.http.put<Todo>(`${this.url}/${todo.id}`, todo);
+	}
+
+	deleteTodo(id: number): Observable<Todo> {
+		return this.http.delete<Todo>(`${this.url}/${id}`);
+	}
+}
+
+This service has defined methods to make requests to the Rails API.
+
+Then we need to configure the app.config.ts file [version 17] or the app.module.ts file [version 16].
+import { HttpClientModule } from '@angular/common/http';
+and add it to the imports array
+
+Then we'll create a component for the todo list:
+ng g c todo-list --standalone
+
+import { Component, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { TodoService } from '../services/todo.service';
+import { Todo } from '../models/todo';
+import { CommonModule } from '@angular/common';
+
+@Component({
+  selector: 'app-todo-list',
+  standalone: true,
+  imports: [FormsModule, CommonModule],
+  templateUrl: './todo-list.component.html',
+  styleUrl: './todo-list.component.scss'
+})
+export class TodoListComponent implements OnInit{
+  todos: Todo[] = [];
+  newTodoBody: string = ''; // Property to hold the new todo input value
+
+  constructor(private todoService: TodoService) { }
+
+  ngOnInit(): void {
+    this.todoService.getTodos().subscribe(todos => this.todos = todos);
+  }
+
+  addTodo() {
+    if (!this.newTodoBody.trim()) {
+      // Prevent adding empty todos
+      return;
+    }
+
+    const todo = {
+      body: this.newTodoBody,
+      is_completed: false
+    };
+
+    this.todoService.createTodo(todo).subscribe(newTodo => {
+      this.todos.push(newTodo);
+      this.newTodoBody = ''; // Reset the input field after adding
+    });
+  }
+
+  updateTodo(todo: Todo) {
+    this.todoService.updateTodo(todo).subscribe(updatedTodo => {
+      const index = this.todos.findIndex(t => t.id === updatedTodo.id);
+      this.todos[index] = updatedTodo;
+    });
+  }
+
+  deleteTodo(id: number) {
+    this.todoService.deleteTodo(id).subscribe({
+      next: () => this.todos = this.todos.filter(todo => todo.id !== id),
+      error: (err) => console.error(err)
+    });
+  }
+}
+
+In this component we've defined methods to add, update, and delete todos. 
+We also get all the todos when the component is initialized.
+
+Then we create a view for the todo list (in the HTML template):
+
+<h1>Todo List</h1>
+
+<!-- Todo form -->
+<div class="todo-form">
+	<input type="text" [(ngModel)]="newTodoBody" placeholder="Add a new todo..." />
+	<button (click)="addTodo()">Add Todo</button>
+</div>
+
+<!-- Todo list -->
+<ul>
+	<li *ngFor="let todo of todos">
+		<input type="checkbox" [(ngModel)]="todo.is_completed" (change)="updateTodo(todo)" />
+		<span>{{ todo.body }}</span>
+		<button (click)="deleteTodo(todo.id)">Delete</button>
+	</li>
+</ul>
+
+Then we add some styles to the CSS [see project].
+
+And we import the TodoListComponent into the app component.
+
+We can start the app with: ng serve
+And also make sure our API server is running: rails s
+
+We'll get a CORS error
+Access to XMLHttpRequest at 'http://localhost:3000/todos' from origin 'http://localhost:4200' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+
+CORS is a security feature that prevents requests from other domains from accessing the API.
+We can fix this by adding the rack-cors gem to the Rails API.
+gem 'rack-cors'
+Then bundle install
+
+In the config/initializers/cors.rb file:
+Rails.application.config.middleware.insert_before 0, Rack::Cors do
+  allow do
+    origins '*'
+    resource '*', headers: :any, methods: [:get, :post, :put, :patch, :delete, :options, :head]
+  end
+end
+
+This allows requests from any origin to access the API. In a production environment we'll want to restrict this to only domains we trust. We replace * with the domains.
+
+
+Then we'll need to restart the server. 

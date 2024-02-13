@@ -28,7 +28,7 @@ RouterModule.forRoot(appRoutes)
 
 Next we need some place to render the currently selected component.
 The right place to inform Angular where to load it is in the app component template. We get rid of the selectors we already had there except for one - at the place where we want to display the component selected by the route, and instead add a special directive. We don't add the component with its selector.
-<router-outlet></fouter-outlet>
+<router-outlet></router-outlet>
 It looks like a component but is a directive. (Directives can have any selector. This one has a component-style selector.)
 This marks the place where we want Angular to load the currently selected component of our router. 
 
