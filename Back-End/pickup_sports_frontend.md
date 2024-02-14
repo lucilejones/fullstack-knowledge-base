@@ -192,3 +192,107 @@ Then we need to update the timeline.component.html file:
 Then we need to import the PostComponent in the timeline.component.ts file.
 
 We'll wrap the post html in a container and give that a min width of 300px. 
+
+# Angular to Rails API - Fetching posts from back end
+We need to start the rails server: rails s
+
+We'll set up environments in the client.
+ng g environments
+
+In the environment.development.ts file:
+
+export const environment = {
+    production: false,
+    apiIrl: 'http://localhost:3000'
+};
+
+In the environment.ts file:
+
+export const environment = {
+    production: true,
+    apiUrl: 'http://www.exampleproductionsite.com'
+};
+
+We'll create our post service:
+ng g s core/services/post
+
+In the post.service.ts file:
+import...@Injectable({})...
+import { Post } from '../../shared/models/post';
+import { Observable } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
+
+export class PostService {
+    constructor(private http:HttpClient) {}
+
+    getTimelinePosts(): Observable<Post[]>{
+        return this.http.get<Post[]>(`${environment.apiUrl}/posts`)
+    }
+}
+
+We'll need to provide the HttpClient in the providers array (in the app.config.ts file):
+providers: [provideTouter(routes), provideHttpClient()]
+
+Then we run ng serve
+
+In our timeline.component.ts file we can take out the hardcoded Posts and just include:
+posts: Post[] = [];
+
+We'll also want to add implements OnInit and add ngOnInit.
+And inject the service.
+constructor(private postService:PostService) {}
+
+ngOnInit(): void {
+    this.postService.getTimelinePosts().subscribe({
+        next: (posts: Post[]) => {
+            this.posts = posts;
+        },
+        error: (error:any) => {
+            console.error('Error fetching timeline posts', error);
+        }
+    })
+}
+
+We get a CORS error.
+In the Gemfile of the API we add gem "rack-cors"
+Then run bundle install
+
+In the config/initializers/cors.rb file:
+Comment back in the Rails.application.config.middleware...
+and change "example.com" to "*" in order to accept requests from anywhere
+[we'll change this later]
+
+At this stage we can comment out the before_action :authenticate_request because we don't have a way for a user to login at this point, so we get an unauthorized error.
+
+At this point we can create posts in the database (using the rails console and Post.create, etc)
+
+[Here we need to remove the title from the model in the frontend - there isn't a title for posts in the database]
+
+# Rails seeds file - populate users and posts
+We'll use the db/seeds.rb file in the API:
+(1..10).each do |i|
+    user = User.create(
+        username: Faker::Internet.username(specifier: 3..20, separators: %w(_)),
+        email: Faker::Internet.email,
+        first_name: Faker::Name.first_name,
+        last_name: Faker::Name.last_name,
+        password: 'password',
+        password_confirmation: 'password'
+    )
+
+    rand(1..10).times do
+        user.posts.create(content: Faker::Lorem.paragraph)
+    end
+end
+
+Then we run rails db:seed
+
+Then we can run the console: rails console
+and check User.count and Post.count
+[in German's example there are 13 users and 51 posts]
+
+Then when the fronend requests the posts in the ngOnInit it displays all the Faker generated posts.
+
+# Fetchin events with pagination
+
