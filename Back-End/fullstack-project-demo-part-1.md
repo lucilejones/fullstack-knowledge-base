@@ -454,3 +454,43 @@ This allows requests from any origin to access the API. In a production environm
 
 
 Then we'll need to restart the server. 
+
+
+# notes from class 2/15/2024
+Angular version 17 is not module dependent
+
+We have app.config.ts and app.routes.ts
+
+We'll have a shared folder, a features folder, and a core folder.
+
+export class User {
+  id!: number;
+  ...
+}
+
+The exclamation point (!) means that this will always have a value.
+
+We don't need to specify the file path to environment.development.ts file.
+In the angular.json file under "fileReplacements" we tell it to replace the environment.ts file with the environment.development.ts file. 
+It knows when we're in development vs production (in the angular.json file also?)
+
+path: '',
+pathMatch: 'full',
+We need the pathMatch full so it only displays the HomeComponent when the whole path is just the main path. All other paths that start with this we want to show their displays. 
+
+Since we do have authentication set up in the backend, we'll need to bypass that just for testing for now.
+In the posts controller file:
+before_action: authenticate_request, except[:index] - something like that
+
+For a child to receive info from the parent component, it needs an @Input
+
+old way (version 16):
+<div *ngFor="let blog of blogs">
+  {{ blog.title }}
+</div>
+We'd need to import the CommonModule in the blog-list.component.ts file.
+
+new way (version 17):
+@for(blog of blogs; track blog.id) {
+  <div>{{blog.title}}</div>  
+}

@@ -322,9 +322,127 @@ The Rails object:
 With access to the Rails object, we have access to sensitive info about our app, such as the secret key base.
 The secret key base is unique to our app, is used for security purposes, and is used to encrypt sensitive data such as the Rails credentials feature (which is used to hold sensitive info like API keys, passwords, etc); we also use the secret key base to encode our payload.
 
+If we run rails console and type Rails.application.secrets.secret_key_base we'll see the secret key base for our app. This is just for the development environment because that's what we have access to in the console. The secret key base is different for every environment.
+
+Then we update our sessions controller to use the jwt_encode method:
+    if user&.authenticate(params[:password])
+      token = jwt_encode(user_id: user.id)
+      render json: { token: token }, status: :ok
+
+We encode the payload and store it in a variable called token. We're passing in the user's id as the payload.
+In the rails console if we create a user we should then be able to login in postman with that user's username and passoword.
+User.create(username: 'username', password: 'password', password_confirmation: 'password')
+
+We'll get a response back that looks like this:
+{
+    "token": "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoyLCJleHAiOjE3MDYzNzk3MDZ9.a0xAX98--3NIRLs6qXr-HM5D5Zyd7ropPGfmuNUeCao"
+}
 
 
+Encryption:
+-a two-way function in which data is converted into a format that cannot easily be understood by unauthorized people. It can be decrypted back to its original form if the person has the right key.
+-used when we need to securely transmit sensitive info over a network (like credit card info)
 
+One-way hashing:
+-a one-way function in which data is converted into a fixed length string of characters. It cannot be decrypted back to its original form. It's used to verify the integrity of data. (Using BCypt to hash our passwords)
+-when a user creates a password, it's hashed using a hash function like BCrypt and the resulting hash is stored in the database. When the user logs in, the password they enter is hashed again and the resulting hash is compared to the one stored. Since hashing is one-way, even if someone gains access to the database, they cannot reverse the hashes back to passwords.
+
+Encoding:
+-the process of converting data from one form to antoher; it doesn't provide any security, it just represents data in a different format
+-used when data needs to be transformed into a format that's compatible with different systems or protocols. For example, when embedding binary data in an XML or JSON payload we might use Base64 encoding to convert the binary data into a text representation that can be easily included in the text-based payload.
+
+
+JWTs are encoded which makes them URL-safe and easy to pass in HTTP headers
+-they're stateless, which means the server doesn't need to keep track of the user's session
+-the signature is encrypted with a secret key
+
+The server decodes the JWT to retrieve the header and payload.
+The server then verifies the signature by comparing it against its own computer signature using the secret key.
+If the signature is valid, the server trusts the claims within the JWT and authenticates the user.
+
+
+Authenticating a user using a JWT
+
+We're going to make certain routes protected so only authenticated users can access them.
+Let's add the :show method to out config/routes.rb file
+
+Then in the users controller we add:
+def show 
+    user = User.find_by(id: params[:id])
+
+    render json: user, status: :ok
+end
+
+Since all controllers will inherit from the ApplicationController, we can include logic there to be used to authenticate the user.
+
+app/controllers/application_controller.rb:
+class ApplicationController < ActionController::API
+  def authenticate_request
+    header = request.headers['Authorization']
+    header = header.split(' ').last if header
+  end
+end
+
+We define a method called authenticate_request.
+To decode the token we need to access the Authorization header.
+The most common type of authentication is the Bearer authentication scheme which uses a security token called the Bearer token. 
+We use split to split the header into an array (splitting by the space character) and then grabbing the last element of the array which is the token.
+
+We then wrap the process of decoding the token in a begin/rescue block:
+    begin
+      decoded = JWT.decode(header, Rails.application.secrets.secret_key_base).first
+      @current_user = User.find(decoded['user_id'])
+    rescue JWT::ExpiredSignature
+      render json: { error: 'Token has expired' }, status: :unauthorized
+    rescue JWT::DecodeError
+      render json: { errors: 'Unauthorized' }, status: :unauthorized
+    end
+
+If the token has expired, we'll return an error message, if the token is invalid we'll return an error message. Otherwise, we'll find the suer and store it in an instance variable called @current_user.
+
+When we call JWT.decode we include the header which has the token and the secret key base. We use the secret key base to verify the signature of the token.
+
+Then we can use the authenticate_request method to protect our routes. In the users controller file we'll add:
+before_action :authenticate_request, except: [:create]
+
+We want to call this before the show action but not the create action (so we put that in except). We want users to be able to create an account without being authorized.
+
+In postman, to send a request with a token we go to the Authorization tab, then for type we select Bearer Token. Then we paste in the token we got back from the login request.
+
+
+One concern with using JWT for session management is the difficulty in invalidating a token once it's been issued. JWTs remain valid until they expired. This can be problematic when immediate revocation is necessary, like for a user logout or account suspension.
+JWTs are also criticized for being larger than traditional session tokens, which can incread the load on network traffic because they're included in every HTTP request.
+
+
+Token Storage and Revocation
+Creating a customized token (not a JWT) is an alternate way to authenticate a user. 
+
+
+# Serialization
+The process of converting data structures of objects into a format that can be stored or transmitted and reconstructed later. 
+examples:
+-when we send data from the client to the server, it needs to be serialized into a format that can be transmitted over the network
+-when we store data in a database, it needs to be serialized into a format that can be stored
+
+advantages:
+-reduces the amount of data sent over the network, which improves performane and reduces bandwith usage
+-allows us to control what data is sent to the client (we can exclude sensitive info like passwords or credit card numbers)
+-allows us to control how the data is formatted (like dates)
+-allows us to include additional info that's not part of the data model (like links to related resources)
+
+Currently when we send a request to localhost:3000/users/1 we get the following response:
+{
+    "id": 1,
+    "username": "username",
+    "password_digest": "$2a$12$rRGqSRKChBUMRs1eIvVjDOeXgZXy17NUViGizydc/EhNGc2.pL.Bu",
+    "created_at": "2022-01-25T01:11:32.201Z",
+    "updated_at": "2022-01-25T01:11:32.201Z"
+}
+
+But we don't want to send the password_digest to the client, and we probably don't need to send the created_at and updated_at attributes.
+
+
+We'll be using the gem blueprinter
 
 
 # Serialization in Rails using blueprinter
