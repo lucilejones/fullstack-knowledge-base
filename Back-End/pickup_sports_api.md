@@ -452,6 +452,7 @@ The to set up our routes for the posts:
 resources :posts
 (This will set up the routes for index, create, show, update, destroy)
 
+
 # post resource - create, update, and destroy
 
 Then we need to define the methods. (For now we'll hold off on defining the index and show methods. These are going to be a litte more complicated.)
@@ -477,3 +478,93 @@ In the routes.rb file we want only:
   resources :posts, only: [:create, :update, :destroy]
 
 
+# testing in rails using RSpec - setup and User Model
+In the Gemfile (in :development, :test):
+  gem "rspec-rails"
+  gem "factory_bot_rails"
+  gem "faker"
+
+Then run bundle install
+Then rails generate rspec:install
+This creates the rspec directory; and every time we generate a model or controller is will create spec files for those also.
+
+We can remove the minitest directory with rm -rf test
+
+In the rails_helper.rb file we need to require 'faker'
+
+To create a spec file for the user model:
+rails g rspec:model user
+
+In the rails_helper.rb file we also need to add (in the RSpec.configure section):
+config.include FactoryBot::Syntax::Methods
+
+We'll add some tests to the user_spec.rb file:
+
+context 'Validation tests' do
+    it 'is not valid without a first name' do
+        user = build(:user, first_name: nil);
+        expect(user).not_to be_valid
+    end
+end
+
+build is a FactoryBot method
+
+Then in the spec/factories/users.rb file:
+username { Faker::Internet.username(specifier: 3..20, separators: %w(_)) }
+email { Faker::Internet.email }
+first_name { Faker::Name.first_name }
+last_name { Faker::Name.last_name }
+
+Here we use Faker to generate data
+
+bundle exec rspec
+This runs the project verions on rspec and not what we have installed globally.
+This is important if we're using different versions on different projects.
+
+We can also create tests for a missing last_name, etc. 
+
+Then we'll write tests for uniqueness:
+
+context 'Uniqueness tests' do
+    it 'is not valid without a unique username' do
+        user1 = create(:user)
+        user2 = build(:user, username: user1.username)
+
+        expect(user2).not_to be_valid
+        expect(user2.errors[:username]).to include("has already been taken")
+    end
+end
+
+Tests for deleting everything associated with a user:
+
+context 'destroy user and everything dependent on it' do
+    let (:user) {create(:user)}
+    let (:user_id) {user.id}
+
+    before do
+        user.destroy
+    end
+
+    it 'deletes profile' do
+        profile = Profile.find_by(user_id: user_id)
+        expect(profile).to be_nil
+    end
+
+    it 'deletes location' do
+        location = Location.find_by(locationable_id: user_id)
+        expect(location).to be_nil
+    end
+
+    it 'deletes posts' do
+        posts = Post.where(user_id: user_id)
+        expect(posts).to be_empty
+    end
+
+    it 'deletes comments' do
+        comments = Comment.where(user_id: user_id)
+        expect(comments).to be_empty
+    end
+end
+
+
+# Testing requests using RSpec - Posts Controller

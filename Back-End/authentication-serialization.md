@@ -519,7 +519,7 @@ class PostBlueprint < Blueprinter::Base
   end
 end
 
-We've defined a view called noraml that will serialize the title and body attributes.
+We've defined a view called normal that will serialize the title and body attributes.
 Then we can include the posts association in our user blueprint:
 ...identifier :id
 
