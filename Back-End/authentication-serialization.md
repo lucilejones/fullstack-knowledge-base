@@ -446,7 +446,99 @@ We'll be using the gem blueprinter
 
 
 # Serialization in Rails using blueprinter
+To the Gemfile add gem 'blueprinter'
+Then run bundle install
 
+To create a serializer for the user model:
+rails g blueprinter:blueprint user
+
+This creates a new file:
+app/blueprints/user_blueprint.rb:
+# frozen_string_literal: true
+
+class UserBlueprint < Blueprinter::Base
+  identifier :id
+
+  fields :username
+end
+
+Here we define the identifier (id) and the fields that we want to serialize (in this case username).
+If we serialize a user record using this blueprint, we'll get:
+{
+  "id": 1,
+  "username": "username"
+}
+
+We're not serializing the password_digest, created_at, and updated_at attributes.
+
+Then in the users controller (in the show method), we update:
+from
+render json: user, status: :ok
+to
+render json: UserBlueprint.render(user), status: :ok
+
+We can create different views for the blueprinter for different use cases of what we want to serialize. For example, sometimes we might want to serialize the user's email address but not other times. 
+
+In our user blueprint we'll update it to have two different views (one with just the username serialized, and one that also includes the created_at and the updated_at):
+# frozen_string_literal: true
+
+class UserBlueprint < Blueprinter::Base
+  identifier :id
+
+  view :normal do
+    fields :username
+  end
+
+  view :extended do
+    fields :username, :created_at, :updated_at
+  end
+end
+
+Then in the users contoller, we specify the view for the blueprint to render:
+render json: UserBlueprint.render(user, view: :normal), status: :ok
+
+
+We can also serialize associations.
+We'll create a new model Post.
+rails g model Post title:string body:text user:references
+
+Then run rails db:migrate
+
+The Post model will have belongs_to :user
+And we add has_many :posts to the User model
+
+To create a serializer for the post model:
+rails g blueprinter:blueprint post
+
+In the app/blueprints/post_blueprint.rb file:
+class PostBlueprint < Blueprinter::Base
+  identifier :id
+
+  view :normal do
+    fields :title, :body
+  end
+end
+
+We've defined a view called noraml that will serialize the title and body attributes.
+Then we can include the posts association in our user blueprint:
+...identifier :id
+
+association :posts, blueprint: PostBlueprint, view: :normal
+...
+
+We're using the method call association to serialize the posts association; we're passing in the method name - posts - indicating the user model has a posts association.
+We're also passing in the blueprint (the post blueprint and the view).
+
+Then we can use the rails console to save some data in the database.
+[added three posts to user 1]
+Then when we sent a GET request to localhost:3000/users/1
+We'll get back an object with the user id, username, and an array of posts.
+
+
+This might not be practical if a user has hundreds of posts, so we can change our code to only get the first post from the user.
+  association :posts, blueprint: PostBlueprint, view: :normal do |user|
+    user.posts.first
+  end
 
 
 

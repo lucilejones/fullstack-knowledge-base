@@ -469,7 +469,7 @@ Tables: Students, Courses, and a junction table like StudentCourses.
 
 Doctors and Patients: Doctors can have multiple patients, and patients can see multiple doctors.
 
-Tables: Doctors, Patients, and a junction table like DoctorPatient.
+Tables: Doctors, Patients, and a junction table like DoctorPatients.
 
 Authors and Research Papers: Authors can co-write multiple research papers, and each paper can have multiple authors.
 
