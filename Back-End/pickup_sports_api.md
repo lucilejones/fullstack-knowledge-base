@@ -1,4 +1,6 @@
 # Pickup sports api ERD
+https://www.youtube.com/watch?v=rkOdoZ8nCho&list=PLj9uZuEI0pczp_qgNf6oAGvwBTLORcT4u&index=1
+
 - a user has one profile (one table for user, one table for profile)
 one-to-one relationship
 
