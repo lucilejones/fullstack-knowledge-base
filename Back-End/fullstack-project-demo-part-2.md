@@ -480,3 +480,51 @@ export class AppComponent {}
 <app-navbar /> 
 <router-outlet />
 
+
+# notes from class 2/22/2024
+
+We'll set up a service and create a login method. We inject the HttpClient into the service. It'll be a post request to the sessions controller using the create action.
+
+login(username: string, password:string) {
+	return this.http.post(`${environment.apiUrl}/login`, {username, password})
+}
+
+We'll need the username and password from the user.
+This returns an observable and we'll subscribe to it in our login component.
+The response will send back a token that we can store.
+
+setToken(token:string) {
+	localStorage.setItem('token', token)
+}
+
+getToken() {
+	return localStorage.getItem('token')
+}
+
+isLoggedIn() {
+	return !!this.getToken();
+}
+This will return as a boolean.
+string, number => return true
+null, undefined => return false
+This doesn't validate the token with the API.
+
+logout() {
+	localStorage.removeItem('token');
+	this.router.navigate(['/login'])
+}
+In practice, we'll want to include an expiration date for the token.
+
+For the input form, we'll import { ReactiveFormsModule } from '@angular/forms';
+
+
+We can check in the localStorage has a token and if it does, we'll have the UI reflect that a user is logged in. If not, it should redirect to the login page.
+
+@if (authService.isLoggenIn()) {
+	<a (click)="authService.logout()">Logout</a>
+}
+@else {
+	<a routerLink="/login">Login</a>
+}
+
+This will re-render every time. Instead, we should include a BehaviorSubject. 
