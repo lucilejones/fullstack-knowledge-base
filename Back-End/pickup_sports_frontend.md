@@ -292,7 +292,190 @@ Then we can run the console: rails console
 and check User.count and Post.count
 [in German's example there are 13 users and 51 posts]
 
-Then when the fronend requests the posts in the ngOnInit it displays all the Faker generated posts.
+Then when the frontend requests the posts in the ngOnInit it displays all the Faker generated posts.
 
-# Fetchin events with pagination
+# Fetching events with pagination
+
+In the frontend project, in the styles.css (or scss):
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+}
+
+ng g c shared/components/navigation --standalone
+
+In the navigation.component.ts file:
+import { RouterModule } from '@angular/router';
+
+imports: [RouterModule],
+
+In the navigation.component.html file:
+<nav class="navbar">
+    <div class="brand-name">Pickup Sports</div>
+    <div class="nav-links">
+        <a routerLink="" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">TimeLine</a>
+        <a routerLink="/events" routerLinkActive="active">Events</a>
+    </div>
+</nav>
+
+In the navigation.component.scss file:
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #ADD8e6;
+    padding: 0.5rem 1 rem;
+    position: sticky;
+    top: 0;
+    width: 100%;
+}
+
+.navbar .brand-name {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: white;
+    padding-left: 0.5rem;
+}
+
+.navbar .nav-links a {
+    color: #333;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    transition: background-color 0.3s ease-in-out;
+}
+.navbar .nav-links a:hover,
+.navbar .nav-links a.active {
+    color: white;
+    background-color: #FFA500;
+    border-radius: 4px;
+}
+
+In order to activate this, we need to go to the app.component.ts file and import the navigation component. 
+Then at the top of the app.component.html we add:
+<app-navigation />
+
+Next we'll generate the events component:
+ng g c features/events
+
+Then in the app.routes.ts file, we'll add the path:
+{
+    path: 'events',
+    loadComponent: () => import("./features/events/events.component").then((c) => c.EventsComponent)
+}
+
+In the api project (backend), we'll need to add a gem to the Gemfile:
+gem 'kaminari'
+
+This will allow us to paginate through the events; we can grab just 10 at a time, for example.
+We can run rails s
+
+Then in the events_controller.rb file:
+before_action :authenticate_request, except: [:index]
+
+(Because this project has authentication for this pages, we'll temporarily say not to worry about authentication for the index action.)
+
+Then for the index action, we'll change Event.all:
+def index
+    events = Event.all
+    render json: events, status: :ok
+end
+
+Instead we'll do:
+def index
+    events = Event.order(created_at: :desc).page(params[:page]).per(12)
+
+    render json: {
+        events: EventBlueprint.render_as_hash(events, view: :short),
+        total_pages: events.total_pages,
+        current_page: events.current_page
+    }
+end
+
+Then in the app/blueprints/event_blueprint.rb file:
+class EventBlueprint < Blueprinter::Base
+    identifier :id
+
+    view :profile do
+        fields :content, :start_date_time, :end_date_time, :guests, :title
+    end
+end
+
+We'll include another view:
+
+view :short do
+    fields :title, :start_date_time, :end_date_time, :guests, :sports
+    association :user, blueprint: UserBlueprint, view: :normal
+end
+
+Then on the frontend we'll create a model for Event:
+ng g class shared/models/event
+
+In the app/shared/models/event.ts file:
+import { User } from "./user";
+
+export class Event {
+    id: number;
+    title: string;
+    content: string;
+    start_date_time: string;
+    end_date_time: string
+    created_at: string;
+    user: User;
+
+    constructor(event:any) {
+        this.id = event.id || 0;
+        this.title = event.title || "";
+        this.content = event.content || "";
+        this.start_date_time = event.start_date_time;
+        this.end_date_time = event.end_date_time;
+        this.created_at = event.created_at;
+        this.user = event.user || new User({})
+    }
+}
+
+Then we'll generate a service for our events:
+ng g s core/services/event
+
+
+In the app/core/services/event.service.ts file:
+In the contructor we'll inject HttpClient.
+We'll also import Event and environment.
+
+getEvents(page:number){
+    return this.http.get<Event[]>(`${environment.apiUrl}/events?page=${page}`)
+}
+
+Then in the app/features/events/events.component.ts file:
+We'll implement OnInit.
+
+currentPage: number = 1;
+totalPages: number = 0;
+events: Event[] = [];
+
+constructor(private eventService:EventService) {}
+
+ngOnInit(): void {
+    this.loadEvents(this.currentPage)
+}
+
+loadEvents(page:number) {
+    this.eventService.getEvents(page).subscribe({
+        next: (response:any) => {
+            this.events = response.events;
+            this.currentPage = response.current_page;
+            this.totalPages = response.total_pages;
+        },
+        error: (error:any) => {
+            console.error("error fetching events", error)
+        }
+    })
+}
+
+
+GOT TO 24:45 in the video starting to create methods for navigating to the next page.
 
