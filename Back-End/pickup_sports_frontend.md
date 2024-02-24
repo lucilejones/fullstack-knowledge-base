@@ -476,6 +476,177 @@ loadEvents(page:number) {
     })
 }
 
+nextPage() {
+    if(this.currentPage < this.totalPages) {
+        this.loadEvents(this.currentPage + 1)
+    }
+}
 
-GOT TO 24:45 in the video starting to create methods for navigating to the next page.
+previousPage() {
+    if(this.currentPage > 1) {
+        this.loadEvents(this.currentPage - 1)
+    }
+}
 
+In the events.component.html file:
+@for (event of events; track event.id) {
+    {{ event.title }}
+}
+
+<div class="pagination-controls">
+    <button (click)="previousPage()" [disabled]="currentPage === 1">Previous</button>
+    <button (click)="nextPage()" [disabled]="currentPage === totalPages || totalPages === 0">Next</button>
+</div>
+
+Then in the db/seeds.rb file we can add:
+
+rand(1..10).times do
+    user.created_events.create(
+        title: Faker::Lorem.sentence,
+        end_date_time: Faker::Time.forward(days: 25, period: :morning),
+        start_date_time: Faker::Time.forward(days: 25, period: morning),
+        guests: rand(1..10),
+        content: Faker::Lorem.paragraph
+    )
+end
+
+Then run rails db:seed
+
+Then in the frontend we'll create and event component:
+ng g c shared/components/events/event
+
+In the event.component.ts file:
+export class EventComponent {
+    @Input({required: true}) event: Event = new Event({})
+}
+
+In the event.component.html file:
+<div class="event-list-item">
+    <div class="event-title">{{ event.title }}</div>
+    <div class="event-username">{{ event.user?.username }}</div>
+    <div class="event-datetime">
+        {{ event.start_date_time | date }} - {{ event.end_date_time | date }}
+    </div>
+
+    <button class="view-more-button">View More</button>
+</div>
+
+We'll need to import the DatePipe in the ts file.
+
+Then in the event.component.scss file:
+.event_list_item {
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    transition: box-shadow 0.3s ease-in-out;
+}
+
+.event-list-item:hover {
+    box-shadow: 0 4px 8px fgba(0,0,0,0.1);
+}
+
+.event-title {
+    color: #333;
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.event-username {
+    color: #666;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.event-datetime {
+    color: #555;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.view-more-button {
+    background-color: #FFA500;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+Then in the events.component.ts file we need to import the event component.
+
+Then instead of {{ event.title }} in teh events.component.html file we can use
+<app-event [event]="event"/>
+
+German updates the events.component.html file:
+
+<div class="event-list-container">
+    @for (event of events; track event.id) {
+        <app-event [event]="event" />
+    }
+</div>
+
+In the events.component.scss file:
+.event-list-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    padding: 1rem;
+    min-height: 90vh;
+}
+
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.pagination-controls button {
+    background-color: #ADD8E6;
+    border: none;
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    margin: 0 0.5rem;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s ease-in-out;
+}
+
+.pagination-controls button:hover {
+    background-color: #FFA500;
+    color: white;
+}
+
+.pagination-controls button:hover[disabled] {
+    background-color: #ccc;
+    cursor: default;
+}
+
+We want to keep track of the query params in the address bar.
+In the events.component.ts file:
+We'll include the router in the constructor.
+private router:Router, private route:ActivatedRoute
+
+Then in the ngOnInit we update it to:
+this.route.queryParams.subscribe(params => {
+    const page = params['page'] ? Number(params['page']) : 1
+    this.loadEvents(page)
+})
+
+Then we update the nextPage and previousPage methods.
+this.router.navigate([], {
+    relativeTo: this.route,
+    queryParams: { page: this.currentPage + 1 },
+    queryParamsHandling: 'merge'
+})
+
+this.router.navigate([], {
+    relativeTo: this.route,
+    queryParams: { page: this.currentPage - 1 },
+    queryParamsHandling: 'merge'
+})
+
+That updates the addresss bar to say localhost:4200/events?page=1 (for example)
