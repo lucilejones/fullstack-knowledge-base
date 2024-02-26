@@ -869,3 +869,145 @@ Everything else passes. (We can take out the pending info in those two files.)
 
 
 # testing the events controller
+We'll start by generate a test file:
+rails g rspec:request Events
+
+Then in the spec/requests/events_spec.rb file:
+require 'rails_helper'
+
+RSpec.describe "Events", type: :request do
+    describe "GET /events" do
+        it 'returns a response with all the events' do
+            create(:event)
+            get '/events'
+            expect(response.body).to eq(Event.all.to_json)
+        end
+    end
+
+    describe "GET /event" do
+        let (:event) { create(:event) }
+
+        it "returns a response with the specified event" do
+            get "/events/#{event.id}"
+            expect(response.body).to eq(event.to_json)
+        end
+    end
+
+    describe "POST /events" do
+        let(:user) { create(:user) }
+        let(:sport) { create(:sport) }
+
+        before do
+            event_attributes = attributes_for(:event, user_id: user.id, sport_ids: [sport.id])
+            post "/events", params: event_attributes
+        end
+
+        it 'creates a new event' do
+            expect(Event.count).to eq(1)
+        end
+
+        it 'return successful response' do
+            expect(response).to be_successful
+        end
+    end
+
+    describe "PUT /events/:id" do
+        let (:event) { create(:event) }
+
+        before do
+            put "/event/#{event.id}", params: {title: "New Title"}
+        end
+
+        it 'updates an event' do
+            event.reload
+            expect(event.title).to eq("New Title")
+        end
+    end
+
+    describe "DELETE /events/:id" do
+        let (:event) { create(:event) }
+
+        before do
+            delete "/events/#{event.id}"
+        end
+
+        it 'deletes an event' do
+            expect(Event.count).to eq(0)
+        end
+
+        it 'destroys event participants' do
+            event_participants = EventParticipant.where(event_id: event.id)
+            expect(event_participants).to be_empty
+        end
+        [German moved this to the event_spec.rb to test in the model]
+
+    end
+end
+
+context "destroy related associations" do
+    it 'destroys event participants' do
+        event = create(:event)
+        event_id = event.id
+        event.destroy
+        event_participants = EventParticipant.where(event_id: event.id)
+        expect(event_participants).to be_empty
+    end
+end
+
+If we run bundle exec rspec now we'll get errors because we haven't created the events controller.
+rails g controller events
+[n to not overwrite the test file we already have]
+
+In the config/routes.rb file:
+resources :events
+
+Then in the events_controller.rb file we'll write methods:
+
+class EventsController < ApplicationController
+    before_action :set_event, only: [:show, :update, :destroy]
+
+    def index
+        events = Event.all
+        render json: events, status: :ok
+    end
+
+    def show
+        render json: @event, status: :ok
+    end
+
+    def create
+        event = Event.new(event_params)
+
+        if event.save
+            render json: event, status: :created
+        else
+            render json: event.errors, status: :unprocessable_entity
+        end
+    end
+
+    def update
+        if @event.update(event_params)
+            render json: @event, status: :ok
+        else
+            render json: @event.errors, status: :unprocessable_entity
+        end
+    end
+
+    def destroy
+        if@event.destroy
+            render json: nil, status: :ok
+        else
+            render json: @event.errors, status: :unprocessable_entity
+        end
+    end
+
+    private
+    
+    def set_event
+        @event = Event.find(params[:id])
+    end
+
+    def event_params
+        params.permit(:title, :content, :start_date_time, :end_date_time, :guests, :user_id, :sport_ids => [])
+    end
+end
