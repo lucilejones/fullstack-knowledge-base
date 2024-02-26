@@ -721,3 +721,151 @@ end
 def show
     render json: @post, status: :ok
 end
+
+
+# tests for users controller - another example of testing requests
+rails g rspec:request Users
+
+Then we copy everything from posts_spec.rb into users_spec.rb
+(The users controller and posts controller have almost the exact same setup.)
+
+Then everywhere it says Post, or posts we change to User or users
+
+This will mostly work (with some tweaks - see files), but we also need to update our users_controller file.
+The user_params can just be:
+params.permit(:username, :email, :first_name, :last_name)
+
+Then the tests will all pass.
+
+
+# testing our events model using Rspec, factory bot, and faker
+We'll create a test file for the event model:
+rails g rspec:model Event
+
+This will create two files: spec/factories/events.rb and spec/models/event_spec.rb
+
+In the factories/events.rb file:
+FactoryBot.define do
+    factory :event do
+        user
+        content { Faker::Lorem.paragraph }
+        start_date_time { Faker::Time.between(from: DateTime.now + 1, to: DateTime.now + 2) }
+        end_date_time { Faker::Time.between(from: DateTime.now + 3, to: DateTime.now + 4) }
+        guests { Faker::Number.between(from: 1, to: 10) }
+    end
+end
+
+Then we'll write the tests in the event_spec.rb file:
+
+require 'rails_helper'
+
+RSpec.describe Event, type: :model do
+    context "validations" do
+        it 'is not valid without a user' do
+            event = build(:event, user:nil)
+            expect(event).not_to be_valid
+        end
+
+        it 'is not valid without a title' do
+            event = build(:event, title: nil)
+            expect(event).not_to be_valid
+        end
+
+        it 'is not valid with start_date_time before current time' do
+            event = build(:event, start_date_time: DateTime.now - 1)
+            expect(event).not_to be_valid
+        end
+
+        it 'is not valid with start_date_time after end_date_time' do
+            event = build(:event, start_date_time: DateTime.now + 1, end_date_time: DateTime.now)
+            expect(event).not_to be_valid
+        end
+    end
+
+    context "associations" do
+        it 'belongs to a user' do
+            event = build(:event)
+            expect(event.user).to be_present
+        end
+
+        it 'has many comments' do
+            event = create(:event)
+            create_list(:comment, 3, commentable: event)
+
+            event.reload
+            expect(event.comments.count).to eq(3)
+        end
+
+        it 'has many sports' do
+            event = create(:event)
+            create_list(:sport, 3, events: [event])
+
+            event.reload
+            expect(event.sports.count).to eq(3)
+        end
+    end
+end
+
+
+We get five failed tests.
+
+We'll run a migration file to add a title to the events table:
+rails g migration AddTitleToEvents
+
+In the migration file:
+def change
+    add_column :events, :title, :string
+end
+
+Then run rails db:migrate
+
+In the factories/events.rb file we need to add:
+title { Faker::Lorem.sentence }
+
+Then run bundle exec rspec (still fail 5 tests)
+
+To the app/models/event.rb we'll add:
+validates :title, presence: true
+
+We'll also add a custom validator:
+
+validate :start_date_time_cannot_be_in_past,
+:end_date_time_cannot_be_before_start_date_time
+...
+def start_date_time_cannot_be_in_past
+    if start_date_time.present? && start_date_time < DateTime.now
+        errors.add(:start_date_time, "can't be in the past")
+    end
+end
+
+def end_date_time_cannot_be_before_start_date_time
+    if end_date_time < start_date_time
+        errors.add(:end_date_time, "can't be before start_date_time")
+    end
+end
+
+
+We need to add test files for the Comment and Sport models:
+rails g rspec:model Comment
+rails g rspec:model Sport
+
+In the spec/factories/comments.rb file:
+FactoryBot.define do
+    factory :comment do
+        user
+        content { Faker::Lorem.paragraph }
+    end
+end
+
+In the spec/factories/sports.rb file:
+FactoryBot.define do
+    factory :sport do
+        name { Faker::Lorem.word}
+    end
+end
+
+We'll get pending messages because we don't have tests in comment_spec.rb and sport_spec.rb
+Everything else passes. (We can take out the pending info in those two files.)
+
+
+# testing the events controller

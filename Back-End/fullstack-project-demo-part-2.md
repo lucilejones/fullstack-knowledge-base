@@ -528,3 +528,45 @@ We can check in the localStorage has a token and if it does, we'll have the UI r
 }
 
 This will re-render every time. Instead, we should include a BehaviorSubject. 
+
+# notes from class 2/26/24
+Adding functionality to create a new blog:
+-check for the create action in the blogs controller in the backend
+-create a component for the new blog form
+-add a route to the app.routes.ts file, blogs/new for the path
+-add a link in the navbar to Add New Blog
+-build the form using ReactiveForms
+-then we add a createBlog method to the blog.service.ts file.
+
+We'll need to generate a token interceptor in order to send a token with the create/update/delete requests.
+n g interceptor auth-token
+
+auth-token.interceptor.ts:
+
+import { HttpInterceptorFn } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { AuthenticationService } from './core/services/authentication.service';
+
+export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
+	const authService = inject(AuthenticationService);
+	const authToken = authService.getToken();
+	
+	const authReq = authToken
+		? req.clone({
+			headers: req.headers.set('Authorization', `Bearer ${authToken}`),
+		})
+		: req;
+	return next(authReq);
+};
+
+Then we add the interceptor in the app.config.ts file:
+providers: [
+	provideRouter(routes),
+	provideHttpClient(withInterceptors([authTokenInterceptor])),
+],
+
+We need to update the create method in the blogs_controller.rb file:
+def create
+	blog = @current_user.blogs.new(blog_params)
+...
+end
