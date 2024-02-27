@@ -1011,3 +1011,67 @@ class EventsController < ApplicationController
         params.permit(:title, :content, :start_date_time, :end_date_time, :guests, :user_id, :sport_ids => [])
     end
 end
+
+
+# setting up BCrypt to hash user passwords
+We'll want to include tests in the spec/models/user_spec.rb file.
+
+In the context 'Validations tests'
+
+it 'is invalid when password is nil' do
+    user = build(:user, password: nil)
+end
+
+it 'is invalid when password_confirmation is nil' do
+    user = build(:user, password_confirmation: nil)
+end
+
+it 'hashes the password' do
+    user = create(:user)
+    expect(user.password_digest).not_to eq 'password'
+end
+
+We'll also need to add password and password_confirmation to the user factory:
+password { 'password' }
+password_confirmation { 'password' }
+
+We'll add the bcrypt gem to the Gemfile:
+gem 'bcrypt'
+
+Then run bundle install
+
+In the app/models/user.rb file we need to include:
+has_secure_password
+
+Then we need to create a migration file:
+rails g migration AddPasswordDigestToUsers password_digest:string
+
+Then we run rails db:migrate
+
+After running bundle exec rspec, we get two failures and need to look at the user controller.
+
+We need to add :password, :password_confirmation to the user_params.
+
+When we create a new user, it'll match the password to the password_confirmation and send back a password_digest as part of the response.
+
+
+# login action and JWTs
+We'll create a controller for users to login
+First, we'll create a test file:
+rails g rspec:request Sessions
+
+In the spec/requests/sessions_spec.rb file:
+require 'rails_helper'
+
+RSpec.describe "Sessions", type: :request do
+    describe "POST /login" do
+
+        let(:user) { create(:user) }
+
+        it 'authenticates the user and returns a success response' do
+            post '/login', params { username: user.username, password: user.password }
+            expect(response).to have_http_status(:success)
+            expect(JSON.parse(response.body)).to include('token')
+        end
+    end
+end
