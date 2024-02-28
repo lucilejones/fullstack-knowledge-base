@@ -1069,9 +1069,247 @@ RSpec.describe "Sessions", type: :request do
         let(:user) { create(:user) }
 
         it 'authenticates the user and returns a success response' do
-            post '/login', params { username: user.username, password: user.password }
+            post '/login', params: { username: user.username, password: user.password }
             expect(response).to have_http_status(:success)
             expect(JSON.parse(response.body)).to include('token')
         end
+
+        it 'does not authenticate the user and returns an error' do
+            post '/login', params: { username: user.username, password: "wrong_password" }
+            expect(response).to have_http_status(:unauthorized)
+        end
     end
 end
+
+We need to define the routes in the confic/routes.rb file (we'll add a scope for all the paths that are at the root level, the root path):
+scope '/' do
+    post 'login', to: 'sessions#create'
+end
+
+Then we'll generate a sessions controller with the create action:
+rails g controller sessions create
+[n to not overwrite our test file]
+
+The way we're setting this up with JWTs we don't need to store tokens in the database. 
+
+We need to add gem 'jwt' to the Gemfile.
+Then run bundle install.
+
+In the app/controllers/sessions_controller.rb file:
+class SessionsController < ApplicationController
+    def create
+        user = User.find_by(username: params[:username])
+
+        if user&.authenticate(params[:password])
+            token = jwt_encode(user_id: user.id)
+            render json: {token: token}, status: :ok
+        else
+            render json: {error: "unauthorized"}, status: :unauthorized
+        end
+    end
+
+    private
+
+    def jwt_encode(payload, exp = 24.hours.from_now)
+        payload[:exp] = exp.to_i
+        JWT.encode(payload, Rails.application.secret_key_base)
+    end
+end
+
+
+# Authenticating User Requests
+In the spec folder we create a folder called support, and in that folder we'll create a file, auth_helpers.rb
+
+This will hold a module where we'll define a method auth_token_for_user:
+module AuthHelpers
+    def auth_token_for_user(user)
+        JWT.encode({user_id: user.id}, Rails.application.secret_key_base)
+    end
+end
+
+We want to make sure our spec files have access to this module.
+In the rails_helper.rb file:
+require 'support/auth_helpers'
+
+And in the RSpec.config (in the same rails_helper.rb file) we need to add:
+config.include AuthHelpers, type: :request
+
+Then in the spec/requests/users_spec.rb file:
+[We'll require a token for each other actions except creating a user]
+...
+describe "GET /users" do
+...
+let(:token) { auth_token_for_user(user)}
+...
+
+before do
+...
+get "/users", headers: { Authorization: "Bearer #{token}" }
+
+We can copy and paste those two lines of code into the show action also.
+Also, the update and delete.
+
+Then we'll add those bits of code to the actions for posts (in the posts_spec.rb file).
+We'll also need to make sure we have a user for every time we have a token. Copying the line:
+let(:user) {create(:user)}
+
+We need to include tests for what happens when a user doesn't have a token.
+
+First, in the application_controller.rb file:
+class ApplicationController < ActionController::API
+    def authenticate_request
+        header = request.headers['Authorization']
+        header = header.split(' ').last if header
+
+        begin
+            decoded = JWT.decode(header, Rails.application.secret_key_base).first
+            @current_user = User.find(decoded["user_id"])
+        rescue JWT::ExpiredSignature
+            render json: {error: "Token has expired"}, status: :unauthorized
+        rescue JWT::DecodeError
+            render json: {error: "unauthorized"}, status: :unauthorized
+        end
+    end
+end
+
+Then in the users_controller.rb file:
+before_action :authenticate_request, only: [:index, :show, :update, :destroy]
+
+In the posts_controller.rb file:
+before_action :authenticate_request
+
+We also want to add tokens for events.
+In the events_controller.rb file:
+before_action :authenticate_request
+
+Then we need to add that to our spec/requests/events_spec.rb file:
+    let(:user) {create(:user)}
+    let(:token) { auth_token_for_user(user)}
+
+    , headers: { Authorization: "Bearer #{token}" }
+
+
+# Identifying Current User through Requests
+In the application_controller.rb file we have
+@current_user = User.find(decoded["user_id"])
+
+This means every specific request will have a current user if the token is valid.
+
+In the posts_controller.rb in the post_params, right now we're requiring the :user_id.
+However, since we're requiring the token with these requests, we don't need to include the :user_id there. We know who the user is because they have a token.
+
+In the update method, we can leave that how it is, with the @post.update(post_params), but the create method we'll do differently:
+post = @current_user.posts.new(post_params)
+
+In the posts_spec.rb file we'll change from user_id: nil to content: nil (in the test context "with invalid params" for the POST post). We also don't need a user_id in the post_attributes for the context "with valid params".
+
+In the events_spec.rb we'll also remove all the places we used user_id.
+(In the event attributes for the POST events.)
+
+If we run bundle exec rspec, the tests will fail saying we didn't include a user.
+So in the events_controller.rb file, we can take user_id out of the event_params.
+Then in the create method we'll use:
+event = @current_user.created_events.new(event_params)
+
+
+# Serializing Data with Blueprinter
+We install the blueprinter gem in the Gemfile:
+gem 'blueprinter'
+Then run bundle install
+
+Blueprinter allows us to choose what we send back in the response from the server.
+
+We'll create a blueprint for user:
+rails g blueprinter:blueprint user
+
+Then in the app/blueprints/user_blueprint.rb file:
+class UserBlueprint < Blurprinter::Base
+    identifier :id
+
+    view :normal do
+        fields :username
+    end
+end
+
+This will create a default view will include the username field and disregard all the others.
+
+Then we can use that in the users_controller.rb file:
+def show
+    render json: UserBlueprint.render(@user, view: :normal), status: 200
+end
+
+Next we'll create a blueprint for a user's profile:
+rails g blueprinter:blueprint profile
+
+In the app/blueprints/profile_blueprint.rb file:
+class ProfileBlueprint < Blueprinter::Base
+    identifier :id
+    fields :bio
+
+    view :normal do
+        association :user, blueprint: UserBlueprint, view: :profile
+    end
+end
+
+Then we'll need to add the profile view to the user_blueprint.rb:
+
+view :profile do
+    association :location, blueprint: LocationBlueprint
+    association :posts, blueprint: PostBlueprint, view: :profile do |user, options|
+        user.posts.order(created_at: :desc).limit(5)
+    end
+
+    association :events, blueprint: EventBlueprint, view: :profile do |user, options|
+        user.events.order(start_date_time: :desc).limit(5)
+    end
+end
+
+Then we'll create three separate blueprints for the location, post, and event.
+
+rails g blueprinter:blueprint location
+
+In the app/blueprints/location_blueprint.rb file:
+identifier :id
+fields :zip_code, :city, :state, :country, :address
+
+rails g blueprinter:blueprint post
+
+In the app/blueprints/post_blueprint.rb file:
+identifier :id
+
+view :profile do
+    fields :content, :created_at
+end
+
+rails g blueprinter:blueprint event
+
+In the app/blueprints/event_blueprint.rb file:
+identifier :id
+
+view :profile do
+    fields :content, :start_date_time, :end_date_time, :guests, :title
+end
+
+Then we'll genreate a controller for profiles with the show action:
+rails g controller profiles show
+
+In the config/routes.rb file:
+[take out the default get 'profiles/show'], then above resources :posts we'll add:
+scope :profiles do
+    get ':username', to: "profiles#show"
+end
+
+Then in the profiles_controller.rb:
+def show
+    user = User.find_by(username: params[:username])
+    profile = user.profile
+    render json: ProfileBlueprint.render(profile, view: :normal), status: :ok
+end
+
+
+When a user gets created we want to make sure a profile gets created. 
+In the models/user.rb file:
+after_create :create_profile
+
+In the profiles_controller we'll add:
+before_action :authenticate_request
