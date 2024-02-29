@@ -650,3 +650,185 @@ this.router.navigate([], {
 })
 
 That updates the addresss bar to say localhost:4200/events?page=1 (for example)
+
+
+# Building Login Functionality
+First we'll create an authentication service:
+ng g service core/services/authentication
+
+In the authentication.service.ts file:
+We'll inject the HttpClient in the constructor.
+
+We're going to target the create action in the sessions controller.
+We need to know the route: in our config/routes.rb file we can see the the login is going to trigger the create action from the sessions controller.
+
+The login method:
+login(username:string, password:string) {
+    return this.http.post<{token:string}>(`${environment.apiUrl}/login`,
+    {
+        username,
+        password
+    })
+}
+
+We'll also define other methods:
+
+setToken(token: string) {
+    localStorage.setItem('token', token)
+}
+
+getToken() {
+    return localStorage.getItem('token')
+}
+
+isLoggedIn() {
+    return !!this.getToken();
+}
+[if the value is returned as null or undefined, it will return false; otherwise if it returns a string, it will return true]
+
+logout() {
+    localStorage.removeItem('token');
+}
+
+We'll also inject the Router.
+Then we'll include navigate to have the user routed to the login page when they're logged out.
+this.router.navigate(['/login'])
+
+Then we'll create the component for loging:
+ng g c features/auth/login
+
+In the app.routes.ts file:
+{
+    path: 'login',
+    loadComponent: () => import("./features/auth/login/login.component").then((c) => c.LoginComponent)
+}
+
+In the login.component.ts file:
+...imports: [ReactiveFormsModule]
+...
+loginForm: FormGroup = new FormGroup({
+    username: new FormControl('', Validators.required),
+    password: new FormControl('', Validators.required)
+})
+
+cosntructor(private authService:AuthenticationService, private router:Router) {}
+
+login() {
+    if(this.loginForm.valid) {
+        const username = this.loginForm.value.username;
+        const password = this.loginForm.value.password;
+
+        this.authService.login(username, password).subscribe({
+            next: (res:any) => {
+                console.log(res);
+                this.router.navigate(['/'])
+            },
+            error: (error:any) => {
+                console.log("Error when logging in", error)
+            }
+        })
+    }
+}
+
+In the login.component.html file:
+<div class="container">
+    <form [formGroup]="loginForm" (ngSubmit)="login()">
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" formControlName="username">
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" formControlName="password">
+        </div>
+
+        <button type="submit" [disabled]="!loginForm.valid">Login</button>
+    </form>
+</div>
+
+Then we'll add a property to the TS file to toggle whether there's an error:
+isError:boolean = false;
+...
+this.isError = true;
+
+Then in the html we'll add a paragraph that displays if there's an error:
+@if(isError) {
+    <p class="error">Username and Password credentials failed. Please try again.</p>
+}
+
+We'll add logic to store the token.
+In the login.component.ts file:
+this.authService.setToken(res.token)
+
+In the login.component.scss file:
+.container {
+    display: flex;
+    justify-content: center;
+    min-height: calc(100vh - 44px);
+    align-items: center;
+    background-color: #f0f0f0;
+}
+
+form {
+    width: 400px;
+    padding: 2rem;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.form-group {
+    display: flex;
+    align-items: center;
+}
+
+form input {
+    flex: 1;
+}
+
+label {
+    margin-right: .5rem;
+    width: 100px;
+}
+
+input {
+    padding: .75rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    color: #222;
+    background-color: white;
+}
+
+input:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+button {
+    padding: .75rem;
+    border: none;
+    background-color: #eeb543;
+    border-radius: 4px;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #dfa03f;
+}
+
+button:disabled {
+    background-color: #ffdd98;
+}
+
+.error {
+    color: red;
+}
+
+
+# Adding a sidebar for additional routes
