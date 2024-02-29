@@ -347,6 +347,7 @@ In the navigation.component.scss file:
     text-decoration: none;
     padding: 0.5rem 1rem;
     transition: background-color 0.3s ease-in-out;
+    cursor: pointer;
 }
 .navbar .nav-links a:hover,
 .navbar .nav-links a.active {
@@ -832,3 +833,151 @@ button:disabled {
 
 
 # Adding a sidebar for additional routes
+We'll add the sidebar to the navigation.component:
+
+<div class="menu-container">
+    <button class="menu" (click)="toggleSidebar()">Menu</button>
+</div>
+...
+<div class="sidebar">
+    <a routerLink="/login">Login</a>
+</div>
+
+In the SCSS file:
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.menu {
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-size: 1rem;
+    color: white;
+}
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    right: -250px;
+    width: 250px;
+    height: 100%;
+    background: #fff;
+    border-left: 2px solid lightblue;
+    transition: right 0.3s ease;
+}
+
+.sidebar.active {
+    right: 0px;
+}
+
+.sidebar a {
+    display: block;
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
+    color: #333;
+    text-decoration: none;
+}
+
+.sidebar a:hover {
+    background-color: #fff;
+}
+
+Then in the TS file we'll define the toggleSidebar method:
+isSidebarVisible:boolean = false;
+toggleSidebar() {
+    this.isSidebarVisible = !this.isSidebarVisible;
+}
+
+We need to add to the sidebar div:
+<div class="sidebar" [class.active]="isSidebarVisible">
+
+Then we'll add to the menu-container div to make it move to the left when the sidebar opens.
+<div class="menu-container" [class.active]="isSidebarVisible">
+
+.menu-container {
+    transition: width 0.3s ease;
+    width: 2rem;
+}
+
+.menu-container.active {
+    width: 275px;
+}
+
+
+# Adding Logout to the Navbar
+We'll inject the authService into the navigation component and use the isLoggedIn:
+isLoggedIn() {
+    return this.authService.isLoggedIn();
+}
+
+logout() {
+    this.authService.logout();
+}
+
+Then in the HTML we'll include anchor tags depending on whether the user is logged in.
+@if (isLoggedIn()) {
+   <a (click)="logout()">Logout</a> 
+}@else {
+    <a routerLink="/login">Login</a>
+}
+
+Then we'll move the timeline and events links to the sidebar.
+And we'll put the menu in the if statement to only be seen when a user is logged in.
+We'll add toggleSidebar() to the logout method.
+
+Part of the issue with using isLoggedIn from the service is we get change detection lots of times. It'll execute every time we type in the inputs. 
+Instead we can use a BehaviorSubject.
+[not shown in the video but can look up how to do]
+
+
+# Adding Auth Guards to Protect Routes
+ng g guard core/guards/auth
+[hit enter for CanActivate]
+
+In the app/core/guards/auth.guard.ts file:
+(if this returns true, the user can proceed, it it returns false, we don't want them to have access)
+import { inject } from '@angular/core';
+import { CanActivateFn, Router } from '@angular/router';
+import { AuthenticationService } from '../services/authentication.service';
+
+export const authGuard: CanActivateFn = (route, state) => {
+    const authService = inject(AuthenticationService)
+    const router = inject(Router)
+
+    if(authService.isLoggedIn()) {
+        return true;
+    }else {
+        router.navigate(['/login']);
+        return false;
+    }
+}
+
+This is not the most secure way to protect routes because right now, if there is a key in the local storage called 'token' these routes can be activated because the isLoggedIn() will return true.
+Instead, we can check to see whether the token is expired and is actually valid.
+That involves sending a request to the server.
+[we'll go over that in a later video]
+
+Then we'll want to use the guard on the different paths in the app.routes.ts file:
+canActivate: [authGuard]
+
+We'll add it to the root (the timeline) and the events.
+
+Then we want to create a noAuthGuard so specific views are not accessible when the user is logged in (for example, we don't want users to go to the login page when they are logged in. They should have to logout.)
+
+ng g guard core/guards/no-auth
+[enter for CanActivate]
+
+const authService = inject(AuthenticationService)
+const router = inject(Router)
+
+if(authService.isLoggedIn()) {
+    router.navigate(['/']);
+    return false;
+}else{
+    return true;
+}
+
+Then we'll add the noAuthGuard to the login path in the app.routes.ts file.
