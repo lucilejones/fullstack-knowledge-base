@@ -264,3 +264,31 @@ def create
     end
   end
 
+
+# notes from class 2/29/2024
+First add the path to app.routes.ts for the login, to load the SignupComponent.
+So we can go to the /signup view.
+Then create the form with Reactive Forms.
+Next build the form in HTML.
+
+Because the login and signup forms have the same styles and classe, we can create an scss file in the auth folder.
+Then in the TS files, we'll add that file path to the array
+styleUrls: ['../auth.shared.scss']
+
+Next we'll connect the frontend to the backend.
+We'll use the auth service and write a signup function that sends a request to the server.
+
+We'll get a CORS error when trying to send the signup form.
+We do have the gem 'rack-cors' so we need to make sure to add the http:// in front of the url. Using the environment.apiUrl can avoid typing out the wrong url.
+
+In the users_controller we can do user.errors.full_messages.
+Then the errors that come from the server, we can display in the UI on the frontend.
+[It also is good practice to instead put validations and error messages on the frontend before it hits the backend.]
+
+@for(error of errors; track $index) {
+	<p class="error">{{ errpr }}</p>
+}
+
+Then the successful response from the signup should route the user to the login page.
+
+We'll also want to add guards to the different routes/views.

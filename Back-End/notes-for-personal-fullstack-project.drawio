@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="sVkzeJZVLTFRhIJskat0" name="Groups Users Lists Items">
-        <mxGraphModel dx="846" dy="656" grid="1" gridSize="10" guides="1" tooltips="1" connect="0" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" background="none" math="0" shadow="0">
+        <mxGraphModel dx="924" dy="598" grid="1" gridSize="10" guides="1" tooltips="1" connect="0" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" background="none" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -349,7 +349,7 @@
                     </mxGeometry>
                 </mxCell>
                 <mxCell id="152" value="A user can have many groups, and a group belongs to a user (the creator of the group).&lt;br&gt;But a user can belong to many groups through group users and a group can have many users through group users.&amp;nbsp;" style="shape=note;size=20;whiteSpace=wrap;html=1;fontSize=12;align=left;verticalAlign=top;spacing=7;" parent="1" vertex="1">
-                    <mxGeometry x="830" y="440" width="230" height="160" as="geometry"/>
+                    <mxGeometry x="620" y="410" width="230" height="160" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>

@@ -505,7 +505,7 @@ rand(1..10).times do
     user.created_events.create(
         title: Faker::Lorem.sentence,
         end_date_time: Faker::Time.forward(days: 25, period: :morning),
-        start_date_time: Faker::Time.forward(days: 25, period: morning),
+        start_date_time: Faker::Time.forward(days: 25, period: :morning),
         guests: rand(1..10),
         content: Faker::Lorem.paragraph
     )
@@ -981,3 +981,234 @@ if(authService.isLoggedIn()) {
 }
 
 Then we'll add the noAuthGuard to the login path in the app.routes.ts file.
+
+
+# Gather current user info on App Initialization
+Somtimes we want to send a request and gather the user info before the startup of the client.
+First we need to set up a route (with a controller) in the backend:
+rails g controller web bootstrap
+(The controller is called web and the action is bootstrap)
+
+This will be a get request. 
+In the routes.rb file (this will be created automatically):
+get 'web/bootstrap'
+
+In the web_controller.rb file:
+before_action :authenticate_request
+
+def bootstrap
+    render json: {
+        current_user: UserBlueprint.render_as_hash(@current_user, view: :me)
+    }, status: :ok
+end
+
+In the user_blueprint we'll define the view :me:
+view :me do
+    fields :first_name, :last_name, :username, :email
+end
+
+Then in the frontend we'll create a service that will define the request to that route we just made.
+ng g s core/services/user
+
+We're going to use a Subject; any components that requires this info can get it, they'll be subscribed to this behavior subject and be notified. 
+
+Then in the app/core/services/user.service.ts file:
+currentUserSubject = new BehaviorSubject<User | null>(null);
+
+constructor(private http:HttpClient) {}
+
+setCurrentUser(user: User | null) {
+    this.currentUserSubject.next(user);
+}
+
+getBootstrapData() {
+    return this.http.get(`${environment.apiUrl}/web/bootstrap`).pipe(
+        tap((res:any) => {
+            this.setCurrentUser(res.current_user)
+        })
+    )
+}
+
+Then in the app.config.ts file:
+export function initializeUserData(userService:UserService, authService:AuthenticationService) {
+    if(authService.isLoggedIn()) {
+        return () => userService.getBootstrapData().subscribe();
+    }else {
+        return () => of(null);
+    }
+}
+
+[right now we don't have this project set up to check expiration dates for tokens, but we'll learn that]
+
+Then we need to add key/values to the appConfig.
+export const appConfig: ApplicationConfig = {
+    providers: [provideRouter(routes),
+    {
+        provide: APP_INITIALIZER,
+        useFactory: initializeUserData,
+        deps: [UserService, AuthenticationService],
+        multi: true
+    }, 
+    provideHttpClient(),
+    ],
+};
+
+When the application is initialized, we'll send a request to get the info.
+
+When we run ng serve, it will execute, but we'll get an unauthorized error.
+We aren't currently sending a token, so we'll need to create an interceptor.
+
+
+# Interceptor for attaching tokens to requests
+We want to attach a token to requests sent to the API when a user is logged in.
+ng g interceptor core/interceptors/auth
+
+In the auth.interceptor.ts file:
+import { HttpInterceptorFn } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { AuthenticationService } from '../services/authentication.service';
+
+export const authInterceptor: HttpInterceptorFn = (req, next) => {
+    const authService = inject(AuthenticationService)
+
+    if(authService.isLoggedIn()) {
+        const authToken = authService.getToken();
+        const authReq = req.clone({
+            headers: req.headers.set(`Authorization`, `Bearer ${authToken}`)
+        })
+
+        return next(authReq)
+    }
+    return next(req);
+}
+
+Then in the app.config.ts file (we need to provide the interceptor):
+provideHttpClient(withInterceptors([authInterceptor])),
+
+Then in the navigation.component.ts file we can subscribe to the currentUserSubject in the user service.
+
+export class NaviationComponent implements OnInit {
+...
+    currentUser: User | null = null;
+}
+... in the constructor we need to inject the UserService
+
+ngOnInit(): void {
+    this.userService.currentUserBehaviorSubject.subscribe((user) => {
+        this.currentUser = user;
+    })
+}
+
+[here German changes currentUserSubject to currentUserBehaviorSubject]
+
+Then in the navigation.component.html file:
+Inside the @if we can include a span:
+<span>Welcome, {{ currentUser?.username }}</span>
+
+
+# Fixing bugs for logout and login
+First, we'll change the way the logout function is interacting with the sidebar.
+We want the logout to only toggle the sidebar if the sidebar is already visible.
+We also need to set the currentUser to null when logging out.
+
+In the navigation.component.ts file:
+
+logout() {
+    if(this.isSidebarVisible) {
+        this.toggleSidebar();
+    }
+    this.authService.logout();
+    this.userService.setCurrentUser(null);
+}
+
+Then in the authentication.service.ts file we'll want to add pipe and switchmap to return an additional Observable (in the login method).
+We'll need to inject the UserService.
+
+  login(username:string, password:string){
+    return this.http.post<{token:string}>(`${environment.apiUrl}/login`,
+    {
+        username,
+        password
+    }).pipe(switchMap((res:any) => {
+        this.setToken(res.token)
+        return this.userService.getBootstrapData()
+    }))
+  }
+
+
+In the login.component.ts file we can update the login method to take out
+this.authService.setToken(res.token)
+
+
+# Creating Signup
+First we'll generate the component:
+ng g c features/auth/signup
+
+Then we'll add a path in the app.routes.ts file:
+    {
+        path: 'signup',
+        loadComponent: () => import('./features/auth/signup/signup.component').then((c) => c.SignupComponent),
+        canActivate: [noAuthGuard]
+    }
+
+
+Then in the navigation.component.html we'll add a routerLink for Signup:
+<a routerLink="/signup">Sign Up</a>
+
+In the singup.component.ts file we'll set up the form:
+
+signupForm: FormGroup = new FormGroup({
+    first_name: new FormControl(''),
+    last_name: new FormControl(''),
+    email: new FormControl(''),
+    username: new FormControl(''),
+    password: new FormControl(''),
+    password_confirmation: new FormControl('')
+})
+
+[We aren't adding validators at this point for time in the demo, but we definitely should.]
+
+Then we'll include a method for the signup process. We also need to inject the AuthenticationService in the constructor.
+
+onSignup() {
+    const formValue = this.SignupForm.value
+    this.authService.signup(formValue).subscribe({
+        next: (res:any) => {
+            this.router.navigate(['/login'])
+        },
+        error: (error:any) => {
+            console.log(error.error)
+        }
+    })
+}
+
+We also need to add a signup method to the authentication.service.ts file:
+signup(data:any) {
+    return this.http.post(`${environment.apiUrl}/users`, data)
+}
+
+Then we can copy the template from the login.component.html and copy that into the signup.component.html file.
+We can take out the error for now, and we'll need to change all the logins to signup (update the methods, etc), and we'll need to add more FormControls for all the signup inputs.
+
+We can include the server-side errors.
+
+If we console.log(error.error) we'll get back an array of errors. We can have these show up in the UI.
+
+In the backend, in the users_controller, we can change the
+render json: user.errors to render json: user.errors.full_messages
+
+In the signup.component.ts file:
+errors:string[] = [];
+
+Then instead of just console.logging it, we can set this.errors = error.error
+
+In the html we'll include:
+@for (error of errors; track $index) {
+    <p>{{ error }}</p>
+}
+
+In the auth folder we'll create a file auth.shared.scss
+We'll copy the css from the login.component.scss file and paste it in there.
+
+Then in the signup and login TS files, we update the styleUrl to the auth.shared.scss file.
+We can delete the separate login and signup scss files.

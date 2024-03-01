@@ -425,7 +425,7 @@ We can include additional information on the routes (for example, to get the pos
 get '/users/:id/posts', to: 'users#posts_index'
 
 Then we need to define that in the users_controller.rb file:
-(We include :posts_index at the top in the before_action - since we're using the @user from the set_user method)
+(We include :posts_index at the top in the before_action :set_user - since we're using the @user from the set_user method - but we take this out becuase @user doesn't end up working)
 def posts_index
     user_posts = @user.posts
 
@@ -488,7 +488,7 @@ In the Gemfile (in :development, :test):
 
 Then run bundle install
 Then rails generate rspec:install
-This creates the rspec directory; and every time we generate a model or controller is will create spec files for those also.
+This creates the spec directory; and every time we generate a model or controller is will create spec files for those also.
 
 We can remove the minitest directory with rm -rf test
 
