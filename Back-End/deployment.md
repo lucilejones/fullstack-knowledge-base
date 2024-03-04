@@ -206,3 +206,10 @@ And get a response:
 
 
 Render only allows for one free service for the database and web service. We'll need to delete one service before we can deploy another one. 
+
+
+# notes from class 3/4/2024
+
+Getting a CORS error after deploying the frontend:
+We need to add frontend url to the origins of the cors.rb file
+(In initializers in the config folder in the backend api)
