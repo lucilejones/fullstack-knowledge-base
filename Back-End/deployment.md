@@ -1,6 +1,6 @@
 # Introduction to Deployment
 -deploying our Ruby on Rails API to a production environment
--upload images in our app using Active Storage and Cloudinary
+
 
 When an API is deployed, it's hosted on a server. The app becomes available to its intended users via the internet.
 
