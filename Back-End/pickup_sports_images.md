@@ -195,3 +195,281 @@ In the response back (if we do a GET request to events/:id) we'll get the url st
 
 
 # Setting up our Create Event Component
+First we'll create the component:
+ng g c features/crete-event
+
+In the app.routes.ts file:
+    {
+        path: 'create-event',
+        loadComponent: () => import('./features/create-event/create-event.component').then((c) => c.CreateEventComponent),
+        canActivate: [authGuard]
+    },
+
+Then in the navigation component html, in the sidebar, we'll add:
+<a routerLink="/create-event">Create Event</a>
+
+In the create-event html we'll set up the form:
+eventForm: FormGroup = new FormGroup({
+    title: new FormControl(""),
+    content: new FormControl(""),
+    start_date_time: new FormControl(""),
+    end_date_time: new FormControl(""),
+    guests: new FormControl(""),
+    sportIds: new FormArray([])
+})
+
+We'll need to import FormArrary, FormControl, and FromGroup from '@angular/forms'
+
+We'll implement OnInit. Then:
+  ngOnInit(): void {
+    this.loadSportIds();
+  }
+
+We'll create that method and also import the Sport model.
+
+sports: Sport[] = []
+
+loadSportIds() {
+    #add a get request to get the sports ids
+}
+
+In the backend, we'll need to set up a route.
+In the config/routes/rb file:
+resources :sports
+
+Then we make a sports_controller.rb file:
+class SportsController < ApplicationController
+    before_action :authenticate_request
+    
+    def index
+      sports = Sport.all
+      render json: SportBlueprint.render(sports), status: :ok
+    end
+  end
+
+And a simple blueprint:
+class SportBlueprint < Blueprinter::Base
+    identifier :id
+    fields :name
+end
+
+Then we'll create a service:
+ng g s core/services/sport
+
+In the SportService:
+getSports() {
+    return this.http.get(`${environment.apiUrl}/sports`)
+}
+
+We'll need to inject the HTTPClient and the environment.
+
+Then in the create-event TS we'll inject the SportService and define the loadSportIds method:
+this.sportService.getSports().subscribe({
+    next: (res) => {
+        console.log(res);
+    },
+    error: (error) => {
+        console.log(error);
+    }
+})
+
+Then (in the create-event component) we'll create a method to add a Sport:
+addSportToForm() {
+    (this.eventForm.get("sportIds") as FormArray).push(new FormControl(false))
+}
+
+This will iterate through the array of sports ids and create an entry for each, but we want to start out as false, so it's not automatically checked. 
+
+
+In the loadSportIds method, instead of just console logging:
+next: (sports:any) => {
+    this.sports = sports;
+    sports.forEach((sport:Sport) => {
+        this.addSportToForm()
+    })
+}
+
+Then we'll define a method to get the FormControls:
+get sportIds(): FormArray {
+    return this.eventForm.get("sportIds") as FormArray
+}
+
+We can move the styles from the auth.shared.scss file into the main styles.scss file.
+
+We need to import the ReactiveFormsModule.
+
+Then in the create-event HTML:
+<div class="form-container">
+    <form [formGroup]="eventForm" (ngSubmit)="onCreateEvent()">
+    <div class="form-group">
+        <label for="title">Title</label>
+        <input type="text" formControlName="title" />
+    </div>
+    <div class="form-group">
+        <label for="content">Content</label>
+        <input type="text" formControlName="content" />
+    </div>
+    <div class="form-group">
+        <label for="guests">Guests</label>
+        <input type="number" formControlName="guests" />
+    </div>
+    <div class="form-group">
+        <label for="start_date_time">Start Date and Time:</label>
+        <input type="datetime-local" formControlName="start_date_time">
+    </div>   
+    <div class="form-group">
+        <label for="end_date_time">End Date and Time:</label>
+        <input type="datetime-local" formControlName="end_date_time">
+    </div>
+    @if(sportIds.length > 0) {
+        <div formArrayName="sportIds">
+            @for(sport of sports; track sport.id) {
+            <input type="checkbox" [formControlName]="$index" [value]="sport.id">
+            {{ sport.name }}
+        }
+        </div>
+    }
+    <button type="submit">Create Event</button>
+    </form>
+
+
+</div>
+
+onCreateEvent() {
+    console.log(this.eventForm)
+}
+
+When we console log this on submit and look at the value, we'll see the the sportIds array is [false, true]. When we submit we'll actually want to extract the id of the sports that just have the value of true. 
+
+In the method:
+onCreateEvent() {
+    const sportIdsFormValue = this.eventForm.value.sportIds;
+    const sportIds = sportIdsFormValue.map((checked:boolean, i:number) => {
+        return checked ? this.sports[i].id : null
+    }).filter((id:any) => {
+        return id !== null
+    })
+    
+    const event:Event = {
+        sport_ids: sportIds,
+        ...this.eventForm.value
+    }
+    this.eventService.createEvent(event).subscribe({
+        next: () => {
+            this.router.navigate(['/events']);
+        },
+        error: (error) => {
+            console.log(error);
+        }
+    })
+}
+
+In the event.service.ts we'll add:
+createEvent(event:Event) {
+    return this.http.post(`${environment.apiUrl}/events`, event)
+}
+
+
+# Uploading images from our front end
+In the HTML we'll need to add a label for the cover image and a file input type.
+<div>
+    <label for="cover_image">Cover Image</label>
+    <input type="file" (change)="onFileSelected($event)" id="cover-image">
+</div>
+
+Then we define the method onFileSelected() - in the TS file:
+onFileSelected(event:any) {
+    if(event.target.files && event.target.files[0]) {
+        this.selectedFile = event.target.files[0]
+    }
+}
+
+We'll have a defined property:
+selectedFile: File | null = null;
+
+Then we have to update our onCreateEvent and how we're sending the data to the backend. We aren't going to use JSON anymore. We're going to use Form Data.
+
+We'll create a separate method, extractSportIds() and put the logic for the sportIds in there:
+extractSportIds() {
+        const sportIdsFormValue = this.eventForm.value.sportIds;
+    const sportIds = sportIdsFormValue.map((checked:boolean, i:number) => {
+        return checked ? this.sports[i].id : null
+    }).filter((id:any) => {
+        return id !== null
+    })
+    return sportIds;
+}
+
+Then in the onCreateEvent() {
+    const sportIds = this.extractSportIds();
+    const formData:any = new FormData();
+    formData.append('title', this.eventForm.get('title')!.value)
+    formData.append('content', this.eventForm.get('content')!.value)
+    formData.append('guests', this.eventForm.get('guests')!.value)
+    formData.append('start_date_time', this.eventForm.get('start_date_time')!.value)
+    formData.append('end_date_time', this.eventForm.get('end_date_time')!.value)
+    sportIds.forEach((sportId:any)=> {
+        formData.append('sport_ids[]', sportId)
+    })
+    formData.append('cover_image', this.selectedFile, this.selectedFile!.name)
+}
+
+Then, instead of passing in the event, we'll pass in the formData.
+this.eventService.createEvent(formData)...
+
+Then we want to be able to include the cover image in the event-details page:
+<div class="event-image">
+    <img [src]="event.cover_image_url || ''" alt="">
+</div>
+
+We can have a default image instead of an empty string.
+
+We'll need to add the cover_image_url to the Event model:
+cover_image_url: string;
+...
+this.cover_image_url = event.cover_image_url;
+
+Then we'll make sure the image only has the container's width:
+.event-image {
+    width: 100%;
+}
+
+
+# Uploading images via production using Cloudinary
+In the backend (API) we add the Cloudinary gem in the production group
+
+group :production do
+    gem 'pg'
+    gem 'cloudinary'
+end
+
+run bundle install
+
+In the config/environments/production.rb file:
+config.active_storage.service = :cloudinary
+
+Then in the config/storage.yml file:
+cloudinary: 
+    service: Cloudinary
+    cloud_name: "test"
+    api_key: "234804571"
+    api_secret: "sdlfkjrt"
+
+[This info comes from Cloudinary - from the account dashboard]
+
+In order to protect this information we're going to edit the credentials file. We can only do that if we have the master.key
+run EDITOR="code --wait" bin/rails credentials:edit
+
+[might not be able to use this command - there are notes in the reading material about that other option (usually for windows)]
+
+When the creditials file opens, we paste in the service, plus the cloud_name, api_key, and api_secret.
+Then we close the file and we use Rails.application.credentials for the sensitive info:
+
+cloudinary:
+    service: Cloudinary
+    cloud_name: <%= Rails.application.credentials.cloudinary[:cloud_name] %>
+    api_key: <%= Rails.application.credentials.cloudinary[:api_key] %>
+    api_secret: <%= Rails.application.credentials.cloudinary[:api_secret] %>
+
+Then in the production.rb file we need to specify the host:
+Rails.application.routes.default_url_options[:host] = "https://sitename.com/"
