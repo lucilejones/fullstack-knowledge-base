@@ -349,3 +349,99 @@ import { FormsModule } from '@angular/forms';
 ...
 })
 
+
+# notes from class 3/14/2024
+rails g model Like user:references likeable:references{polymorphic}
+
+The Like belongs to a user and can be for any kind of record (blog post, photo, comment, etc)
+
+In the user.rb:
+has_many :likes
+
+In the blog.rb:
+has_many :likes, as: :likeable
+
+the like.rb file:
+belongs_to :user
+belongs_to :likeable, polymorphic: true
+
+def like
+  #@current_user
+  #blog_id
+  blog = Blog.find(params[:blog_id])
+  #allow user to like blog
+  like = blog.likes.new(user_id: @current_user.id)
+  blog_creator = blog.user
+
+  if like.save
+    #add Pusher.trigger code here
+    Pusher.trigger(blog_creator.id, 'like', {
+      blog_id: blog.id,
+      notification: "#{@current_user.username} has liked #{blog.title}"
+    })
+    head :ok
+  else
+    render json: nil, status: :unprocessable_entity
+  end
+end
+
+def unlike
+  blog = Blog.find(params[:blog_id])
+  like = blog.likes.find_by(user_id: @current_user.id)
+
+  if like.destroy
+    head :ok
+  else
+    render json: nil, status: :unprocessable_entity
+  end
+end
+
+Then we need to update the blueprint for blog in order to include the likes info.
+field :liked do |blog, options|
+  blog.likes.where(user: options[:current_user]).exists?
+end
+
+To refactor that, we can define a method in the blog model and then include that in the blueprint.
+
+Adding Angular Material:
+ng add @angular/material
+
+And we'll need to import the MatIconModule in the TS file for the blog-list.component
+
+On the frontend, we'll update the Blog model to include liked: boolean = false;
+
+Then we use an EventEmitter. 
+
+With Pusher we need to user the pusher-js library.
+
+npm install pusher-js
+
+We need to set up the development environment:
+pusher: {
+  key: 'asdfs',
+  cluster: 'us2'
+}
+
+We can put the same info in the production environment, but in a real-world scenerio it probably makes sense to use separate info for each environment.
+
+Then we'll create a notificaiton service.
+We'll have the user subscribe to a channel when they log in.
+
+Following the Puhser docs to set up a subscription to a user's channel when they log in, and listen to specific events.
+
+listen(userId: number) {
+  this.pusher = new Pusher(environment.pusher.key, {
+    cluster: environment.pusher.cluster
+  });
+
+  this.channel = this.pusher.subscribe(userId.toString());
+
+  this.channel.bind('like', (data: any) => {
+    console.log('received data', data)
+    ...
+  })
+}
+
+In the backend, we set up a route '/web' to get data when the app loads, when a user is logged in. So we can get the current_user.id.
+
+And we'll set up a user.service.ts

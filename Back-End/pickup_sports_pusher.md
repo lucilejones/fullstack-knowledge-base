@@ -175,3 +175,45 @@ toggleJoinEvent() {
         }
     })
 }
+
+
+# Preview Guests for an Event
+In the event-details.component.ts ngOnInit:
+this.prepareGuests();
+
+...
+prepareGuests() {
+    this.guests = [...this.event.participants]
+
+    const emptySlots = this.event.guests - this.event.particpants.length;
+
+    for(let i = 0; i < emptySlots; i++) {
+        this.guests.push({ empty: true });
+    }
+}
+
+trackById(index: number, item:any) {
+    return item.id || index;
+}
+
+Before the constructor we'll define a property:
+guests: any = [];
+
+Then we update the toggleJoinEvent() method:
+...
+this.hasJoined = !this.hasJoined;
+
+if(this.currentUser) {
+    if(this.hasJoined){
+        this.event.participants.push(this.currentUser)
+    } else {
+        this.event.participants = this.event.participants.filter((p) => p.id !== this.currentUser?.id)
+    }
+}
+
+In the HTML:
+<div class="guests-container">
+    @for(guest of guests; track trackById) {
+
+    }
+</div>

@@ -1081,7 +1081,7 @@ RSpec.describe "Sessions", type: :request do
     end
 end
 
-We need to define the routes in the confic/routes.rb file (we'll add a scope for all the paths that are at the root level, the root path):
+We need to define the routes in the config/routes.rb file (we'll add a scope for all the paths that are at the root level, the root path):
 scope '/' do
     post 'login', to: 'sessions#create'
 end
