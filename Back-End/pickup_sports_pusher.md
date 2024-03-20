@@ -214,6 +214,113 @@ if(this.currentUser) {
 In the HTML:
 <div class="guests-container">
     @for(guest of guests; track trackById) {
-
+        <div class="guest-item">
+            @if(guest.empty) {
+                <div>Open Slot</div>
+            } @else {
+                <div>{{ guest.username}}</div>
+            }
+        </div>
     }
 </div>
+
+We'll need to execute the prepareGuests function again in order to update the UI.
+
+In the joggleJoinEvent, eventJoin$.subscribe:
+this.prepareGuests();
+
+In the event-details.component.scss file:
+.guests-contatiner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px;
+}
+
+.guest-item {
+    border: 1px solid #ccc;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 200px;
+    height: 100px;
+}
+
+
+# Integrating Pusher into our Frontend
+We're going to subscribe to pusher channels.
+
+The first thing we'll do is install (in the client:)
+npm install pusher-js
+
+Then in the environments/environment.development.ts file:
+pusher: {
+    key: '',
+    cluster: '',
+}
+
+We'll also copy that to the production file.
+
+We're going to allow a user to be subscribed to their own channel.
+
+Then we need to create a notification.service.ts file in the services folder.
+pusher: any;
+channel: any;
+...
+listen(userId:number) {
+    this.pusher = new Pusher(environment.pusher.key, {
+        cluster: environment.pusher.cluster
+    })
+
+    this.channel = this.pusher.subscribe(userId.toString())
+
+    this.channel.bind('notification', (date:any) => {
+        console.log(data);
+    })
+}
+[we'll need to import Pusher from 'pusher-js';]
+[In the events.contoller.rb file in the API we have the two Pusher.trigger actions/methods - German updated these to say 'notification' instead of 'notifications'; we're binding to the specific event]
+
+It makes sense to listen to the channel when our app loads.
+We can do that in our app.config.ts file:
+[In the initializeUserData, in the if authService.isLoggedIn in the subscribe]
+return () => userService.getBootstrapData().subscribe((res:any) => {
+    const currentUser = res.current_user
+    notificationService.listen(currentUser.id)
+})
+
+[we'll need to include the notificationService: NotificationService and provide it in the deps array.]
+
+When the user logs in we want to also subscribe/listen. We'll want to make sure to stop when the user logs out. (We'll figure that out later.)
+
+At this point, we'll have to refresh the page in order to start listening. (We haven't set that up to start listening on login, yet.)
+
+
+# Fixing Login for Pusher
+We want the app to subscribe to the pusher channel on login.
+
+In the login.component.ts file:
+[in the login function, in the this.authService.login]
+next: (res:any) => {
+    // subscribe to pusher channel
+    this.notificationService.listen(res.current_user.id);
+    this.router.navigate(['/]);
+}
+
+We need to inject the notification service. 
+
+We want to stop listening when a user logs out.
+
+We need to inject the NotificationService into the authentication.service.ts file.
+Then in the logout function:
+const currentUser = this.userService.currentUserSubject.value;
+// unsubscribe from pusher channel
+this.notificationService.unsubscribeChannel(currentUser!.id);
+
+We have to first define a method in the notification.service.ts:
+unsubscribeChannel(userId:number) {
+    this.pusher.unsubscribe(userId.toString())
+}
+
+
+# Popup Notification
