@@ -324,3 +324,117 @@ unsubscribeChannel(userId:number) {
 
 
 # Popup Notification
+We'll need to dynamically load a component. We can create a component at runtime, then it will go away and get removed from the DOM.
+
+First we'll create the component:
+ng g c shared/popup
+
+[we'll want to move it to the components folder]
+
+We won't need the HTML, SCSS, or SPEC files.
+
+In the popup.component.ts file:
+
+We'll change templateUrl to template: and we'll remove the link and just set up a small template.
+template: `
+    <span>{{ message }}</span>
+`
+
+Then in the export class we set a message property:
+message: string = ''
+
+Instead of the styleUrl, we'll change to 
+styles: [`
+    .notification {
+        display: block;
+        position: fixed;
+        top: 20%;
+        right: 0;
+        z-index: 1000;
+        width: 250px;
+    }
+`]
+
+We'll also add some animations:
+animations: [
+    trigger("state", [
+        state("void", style({
+            transform: "translateX(100%)",
+            opacity: 0
+        })),
+        state("opened", style({
+            transform: "translateX(0)",
+            opacity: 1;
+        })),
+        transition("void => "opened", animate("300ms ease-out")),
+        transition("opened => void", animate("300ms ease-in"))
+    ])
+],
+
+[we'll need to import trigger from '@angular/animations'; also state and style, and transition and animate]
+
+We'll give the span a class="notification"
+
+We actually get rid of the property messages and instead:
+@HostBinding('@state')
+state: "opened" | "void" = "void";
+
+@Input()
+set message(msg:string) {
+    this._message = msg;
+    this.state = "opened"
+}
+
+get message(): string {
+    return this._message
+}
+
+private _message = "";
+
+@Output()
+closed = new EventEmitter<void>();
+
+Then we'll create a service:
+ng g s core/services/popup
+
+In the popup.service.ts file:
+showAsElement(message:string) {
+    const popupElement: NgElement & WithProperties<PopupComponent> = document.createElement("popup-element") as any;
+
+    // setTimeput to remove element
+
+    popupElement.message = message;
+    document.body.appendChild(popupElement);
+}
+
+However, we don't have access to these types. 
+We need to install a specific package - 
+npm install @angular/elements@17.1.2 --save
+[German was able to install 17.1.2; I had to do 17.1.3]
+
+Then we'll import NgElement and WithProperties from '@angular/elements'
+
+In the app.component.ts file:
+constructor(injector:Injector, public popup:PopupService) {
+    const popupElement = createCustomElement(PopupComponent, {injector})
+    customElements.define("popup-element", popupElement)
+}
+
+We'll need to import Injector, PopupService, createCustomElement, and PopupComponent.
+
+This new way is easier than the old way of creating elements at runtime.
+
+Then in the notification service, we inject the popupService.
+Then we'll trigger the popup in the this.channel.bind (when we get the notification from Pusher.)
+
+this.popupService.showAsElement(data.notification)
+
+Then we'll include the setTimeout in the popup.service.ts file:
+setTimeout(() => {
+    document.body.removeChild(popupElement);
+}, 3000)
+
+We are getting an error related to the BrowserModule.
+We need to add (in the app.config.ts file, in the providers array):
+provideAnimations(),
+[and we need to import it at the top from '@angular/platform-browser/animations]
